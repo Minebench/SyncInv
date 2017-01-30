@@ -10,10 +10,12 @@ import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -70,6 +72,11 @@ public final class SyncInv extends JavaPlugin {
      */
     private int queryTimeout;
 
+    /**
+     * Should the plugin try to fix maps that were transferred over?
+     */
+    private boolean shouldFixMaps;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -102,6 +109,7 @@ public final class SyncInv extends JavaPlugin {
         serverGroup = getConfig().getString("serverGroup");
         serverName = getConfig().getString("server-name");
         queryTimeout = getConfig().getInt("query-timeout");
+        shouldFixMaps = getConfig().getBoolean("fix-maps");
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
@@ -246,8 +254,20 @@ public final class SyncInv extends JavaPlugin {
                     player.giveExp(data.getExp());
                     // players will associate the level up sound from the exp giving with the successful load of the inventory
                     // --> play sound also if the player does not level up
-                    if(player.getLevel() < 1) {
+                    if (player.getLevel() < 1) {
                         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
+                    }
+                    if (shouldFixMaps) {
+                        for (ItemStack item : data.getInventory()) {
+                            if (item.getType() == Material.MAP) {
+                                checkMap(item.getDurability());
+                            }
+                        }
+                        for (ItemStack item : data.getEnderchest()) {
+                            if (item.getType() == Material.MAP) {
+                                checkMap(item.getDurability());
+                            }
+                        }
                     }
                     player.getInventory().setContents(data.getInventory());
                     player.getEnderChest().setContents(data.getEnderchest());
@@ -256,6 +276,15 @@ public final class SyncInv extends JavaPlugin {
                 }
             }
         });
+    }
+
+    /**
+     * Make sure that we have maps with that id
+     */
+    private void checkMap(short id) {
+        while (getServer().getMap(id) == null) {
+            getServer().createMap(getServer().getWorlds().get(0));
+        }
     }
 
     /**

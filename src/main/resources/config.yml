@@ -14,6 +14,9 @@ server-name: server1 # CHANGE THIS!
 # respond to a query
 query-timeout: 5
 
+#Should the plugin try to fix maps that were transferred over?
+fix-maps: true
+
 # Language settings
 lang:
   cant-pickup-exp: "&cDu kannst erst Erfahrung aufsammeln wenn deine Spielerdaten geladen sind!"
