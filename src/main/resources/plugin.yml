@@ -1,0 +1,20 @@
+name: ${project.name}
+version: '${minecraft.plugin.version}'
+main: de.minebench.syncinv.SyncInv
+softdepend: [OpenInv]
+authors: [Phoenix616]
+description: ${project.description}
+commands:
+   syncinv:
+      aliases: [syncinv]
+      description: Plugin command description.
+      usage: /<command> [reload]
+      permission: SyncInv.command
+      permission-message: You don't have the permission <permission>
+permissions:
+   syncinv.command:
+      description: Gives permission to the plugin command
+      default: op
+   syncinv.command.reload:
+      description: Gives permission to reload the plugin
+      default: op

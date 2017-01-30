@@ -1,0 +1,23 @@
+# Whether or not the plugin should query inventories on other server
+# or just move the player to the server with the newest inventory
+query-inventories: true
+
+# The name of the group this server is in. Set that to the same value
+# on all servers which's data you want to get synced.
+group: survival
+
+# The name of this server. If you don't want to query inventories then
+# this has to be the same as the name in your BungeeCord's config.yml
+server-name: server1 # CHANGE THIS!
+
+# The amount of seconds we should maximally wait for all servers to
+# respond to a query
+query-timeout: 5
+
+# Language settings
+lang:
+  cant-pickup-exp: "&cDu kannst erst Erfahrung aufsammeln wenn deine Spielerdaten geladen sind!"
+  cant-pickup-items: "&cDu kannst erst Items aufsammeln wenn deine Spielerdaten geladen sind!"
+  cant-drop-items: "&cDu kannst erst Items droppen wenn deine Spielerdaten geladen sind!"
+  cant-move: "&cDu kannst dich erst bewegen wenn deine Spielerdaten geladen sind!"
+  wait-for-loading: "&cBitte warte bis deine Spielerdaten geladen sind!"
