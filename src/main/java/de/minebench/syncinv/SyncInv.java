@@ -22,6 +22,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Map;
 import java.util.UUID;
 
 /*
@@ -265,15 +268,18 @@ public final class SyncInv extends JavaPlugin {
                     if (player.getLevel() < 1) {
                         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
                     }
+                    // Try to fix the maps if we should do it
                     if (shouldFixMaps) {
-                        for (ItemStack item : data.getInventory()) {
-                            if (item.getType() == Material.MAP) {
-                                checkMap(item.getDurability());
-                            }
-                        }
-                        for (ItemStack item : data.getEnderchest()) {
-                            if (item.getType() == Material.MAP) {
-                                checkMap(item.getDurability());
+                        File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
+                        for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
+                            File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
+                            if (mapFile.canWrite()) {
+                                checkMap(map.getKey());
+                                try {
+                                    Files.write(mapFile.toPath(), map.getValue());
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }

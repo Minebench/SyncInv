@@ -1,10 +1,20 @@
 package de.minebench.syncinv;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /*
@@ -29,23 +39,32 @@ public class PlayerData {
     private final ItemStack[] inventory;
     private final ItemStack[] enderchest;
     private final Collection<PotionEffect> potionEffects;
-
-    public PlayerData(UUID playerId, int exp, ItemStack[] inventory, ItemStack[] enderchest, Collection<PotionEffect> potionEffects) {
-        this.playerId = playerId;
-        this.exp = exp;
-        this.inventory = inventory;
-        this.enderchest = enderchest;
-        this.potionEffects = potionEffects;
-    }
+    private final Map<Short, byte[]> mapFiles = new HashMap<>();
 
     public PlayerData(Player player) {
-        this(
-                player.getUniqueId(),
-                getTotalExperience(player),
-                player.getInventory().getContents(),
-                player.getEnderChest().getContents(),
-                player.getActivePotionEffects()
-        );
+        this.playerId = player.getUniqueId();
+        this.exp = getTotalExperience(player); // No way to properly get the total exp in Bukkit
+        this.inventory = player.getInventory().getContents();
+        this.enderchest = player.getEnderChest().getContents();
+        this.potionEffects = player.getActivePotionEffects();
+
+        // Load maps that are in the inventory/enderchest
+        Set<Short> mapIdSet = new HashSet<>(); // Use set to only add each id once
+        mapIdSet.addAll(getMapIds(inventory));
+        mapIdSet.addAll(getMapIds(enderchest));
+
+        // Load the map file data contents
+        File mapDataDir = new File(player.getServer().getWorlds().get(0).getWorldFolder(), "data");
+        for (Short mapId : mapIdSet) {
+            File mapFile = new File(mapDataDir, "map_" + mapId + ".dat");
+            if (mapFile.exists() && mapFile.isFile() && mapFile.canRead()) {
+                try {
+                    mapFiles.put(mapId, Files.readAllBytes(mapFile.toPath()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public UUID getPlayerId() {
@@ -68,6 +87,10 @@ public class PlayerData {
         return potionEffects;
     }
 
+    public Map<Short, byte[]> getMapFiles() {
+        return mapFiles;
+    }
+
     public String toString() {
         String r = "PlayerData{playerId=" + playerId + ",exp=" + exp + ",inventory={";
         for(ItemStack item : inventory) {
@@ -80,6 +103,10 @@ public class PlayerData {
         r += "},potionEffects=";
         for(PotionEffect effect : potionEffects) {
             r += effect + ",";
+        }
+        r += "},mapFiles=";
+        for(Map.Entry<Short, byte[]> map : mapFiles.entrySet()) {
+            r += "[" + map.getKey() + "," + map.getValue().length + "],";
         }
         return r + "}}";
     }
@@ -127,5 +154,20 @@ public class PlayerData {
             exp = Integer.MAX_VALUE;
         }
         return exp;
+    }
+
+    /**
+     * Get a list with the ids of all maps in an array of items
+     * @param items The items (e.g. from an inventory) to get the map ids from
+     * @return A list of map ids (shorts)
+     */
+    public static List<Short> getMapIds(ItemStack[] items) {
+        List<Short> mapIds = new ArrayList<>();
+        for (ItemStack item : items) {
+            if (item.getType() == Material.MAP) {
+                mapIds.add(item.getDurability());
+            }
+        }
+        return mapIds;
     }
 }
