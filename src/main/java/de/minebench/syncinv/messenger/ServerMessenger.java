@@ -60,7 +60,7 @@ public abstract class ServerMessenger {
     }
 
     public void queryData(UUID playerId) {
-        long lastSeen = plugin.getLastSeen(playerId);
+        long lastSeen = plugin.getLastSeen(playerId, false);
 
         queries.put(playerId, new PlayerDataQuery(playerId, lastSeen));
 
@@ -99,7 +99,7 @@ public abstract class ServerMessenger {
             switch (type) {
                 case GET_LAST_SEEN:
                     playerId = UUID.fromString(getString(args[0]));
-                    lastSeen = queries.containsKey(playerId) ? queries.get(playerId).getLocalLastSeen() : plugin.getLastSeen(playerId);
+                    lastSeen = plugin.getLastSeen(playerId, true);
                     sendMessage(sender, MessageType.LAST_SEEN, toByteArray(playerId.toString()), toByteArray(lastSeen)); // Send the last seen date to the server that requested it
                     break;
 

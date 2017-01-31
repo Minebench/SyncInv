@@ -166,10 +166,17 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Get the date when a player last logged out
      * @param playerId The UUID of the player
+     * @param online Whether or not it should return the current time if the player is online
      * @return The timestamp of his last known data on the server in milliseconds;
      * 0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
      */
-    public long getLastSeen(UUID playerId) {
+    public long getLastSeen(UUID playerId, boolean online) {
+        if (online) {
+            Player player = getServer().getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                return System.currentTimeMillis();
+            }
+        }
         File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         File playerDat = new File(playerDataFolder, playerId + ".dat");
         return playerDat.lastModified();
