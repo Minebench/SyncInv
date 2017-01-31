@@ -16,6 +16,8 @@ package de.minebench.syncinv.messenger;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.bukkit.scheduler.BukkitTask;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +26,7 @@ public class PlayerDataQuery {
     private final long timestamp = System.currentTimeMillis();
     private final UUID playerId;
     private final long localLastSeen;
+    private BukkitTask timeoutTask;
 
     private Map<String, Long> servers = new ConcurrentHashMap<>();
 
@@ -75,5 +78,16 @@ public class PlayerDataQuery {
      */
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimeoutTask(BukkitTask timeoutTask) {
+        this.timeoutTask = timeoutTask;
+    }
+
+    public void stopTimeout() {
+        if (timeoutTask != null) {
+            timeoutTask.cancel();
+            timeoutTask = null;
+        }
     }
 }

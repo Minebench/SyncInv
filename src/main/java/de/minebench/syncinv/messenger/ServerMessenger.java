@@ -59,12 +59,25 @@ public abstract class ServerMessenger {
         sendMessage("group:" + plugin.getServerGroup(), MessageType.HELLO);
     }
 
-    public void queryData(UUID playerId) {
-        long lastSeen = plugin.getLastSeen(playerId, false);
+    /**
+     * Query the data of a player
+     * @param playerId The UUID of the player
+     * @return The new PlayerDataQuery object or null if one was already started
+     */
+    public PlayerDataQuery queryData(UUID playerId) {
+        if (queries.get(playerId) != null) {
+            // already querying data
+            return null;
+        }
 
-        queries.put(playerId, new PlayerDataQuery(playerId, lastSeen));
+        long lastSeen = plugin.getLastSeen(playerId, false);
+        PlayerDataQuery query = new PlayerDataQuery(playerId, lastSeen);
+        query.setTimeoutTask(plugin.runLater(() -> finishQuery(query), 20 * plugin.getQueryTimeout()));
+        queries.put(playerId, query);
 
         sendMessage("group:" + plugin.getServerGroup(), MessageType.GET_LAST_SEEN);
+
+        return query;
     }
 
     /**
@@ -96,6 +109,7 @@ public abstract class ServerMessenger {
         UUID playerId;
         long lastSeen;
         Player player;
+        PlayerDataQuery query;
         try {
             switch (type) {
                 case GET_LAST_SEEN:
@@ -106,22 +120,13 @@ public abstract class ServerMessenger {
 
                 case LAST_SEEN:
                     playerId = UUID.fromString(getString(args[0]));
-                    PlayerDataQuery query = queries.get(playerId);
+                    query = queries.get(playerId);
                     if (query != null) { // No query was started? Why are we getting this message?
                         lastSeen = getLong(args[1]);
                         query.addResponse(sender, lastSeen);
 
-                        if (query.getServers().size() == servers.size() // All known servers responded
-                                || query.getTimestamp() + plugin.getQueryTimeout() * 1000 < System.currentTimeMillis()) { // Query timed out, just use the known servers
-                            String youngestServer = query.getYoungestServer();
-                            if (youngestServer == null) { // This is the youngest server
-                                queries.remove(playerId); // Let the player play
-                            } else if (plugin.shouldQueryInventories()){
-                                sendMessage(youngestServer, MessageType.GET_DATA, toByteArray(playerId.toString())); // Query the player's data
-                            } else {
-                                plugin.connectToServer(playerId, youngestServer); // Connect him to the server
-                                queries.remove(playerId);
-                            }
+                        if (query.getServers().size() == servers.size()) { // All known servers responded
+                            finishQuery(query);
                         }
                     }
                     break;
@@ -149,10 +154,15 @@ public abstract class ServerMessenger {
 
                 case DATA:
                     playerId = UUID.fromString(getString(args[0]));
-                    player = plugin.getServer().getPlayer(playerId);
-                    if (player != null && player.isOnline()) {
-                        PlayerData data = (PlayerData) getObject(args[1]);
-                        plugin.applyData(data);
+                    query = queries.get(playerId);
+                    if (query != null) {
+                        query.stopTimeout();
+                        queries.remove(playerId);
+                        player = plugin.getServer().getPlayer(playerId);
+                        if (player != null && player.isOnline()) {
+                            PlayerData data = (PlayerData) getObject(args[1]);
+                            plugin.applyData(data);
+                        }
                     }
                     break;
 
@@ -187,6 +197,21 @@ public abstract class ServerMessenger {
             }
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void finishQuery(PlayerDataQuery query) {
+        query.stopTimeout();
+
+        String youngestServer = query.getYoungestServer();
+        if (youngestServer == null) { // This is the youngest server
+            queries.remove(query.getPlayerId()); // Let the player play
+        } else if (plugin.shouldQueryInventories()){
+            sendMessage(youngestServer, MessageType.GET_DATA, toByteArray(query.getPlayerId().toString())); // Query the player's data
+            query.setTimeoutTask(plugin.runLater(() -> queries.remove(query.getPlayerId()), 20 * plugin.getQueryTimeout()));
+        } else {
+            plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
+            queries.remove(query.getPlayerId());
         }
     }
 

@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.util.UUID;
@@ -68,7 +69,7 @@ public final class SyncInv extends JavaPlugin {
     private ServerMessenger messenger;
 
     /**
-     * The amount of seconds we should wait for a query to finish
+     * The amount of seconds we should wait for a query to stopTimeout
      */
     private int queryTimeout;
 
@@ -212,7 +213,7 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
-     * Get the amount of seconds we should wait for a query to finish
+     * Get the amount of seconds we should wait for a query to stopTimeout
      */
     public int getQueryTimeout() {
         return queryTimeout;
@@ -314,5 +315,9 @@ public final class SyncInv extends JavaPlugin {
         } else {
             run.run();
         }
+    }
+
+    public BukkitTask runLater(Runnable runnable, int delay) {
+        return getServer().getScheduler().runTaskLater(this, runnable, delay);
     }
 }
