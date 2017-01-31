@@ -75,9 +75,10 @@ public abstract class ServerMessenger {
      * @param args The arguments
      */
     private void onMessage(String sender, String target, MessageType type, byte[]... args) {
-        if (target != null // target is null? Accept message anyways...
+        if (sender.equals(plugin.getServerName()) // don't read messages from ourselves
+                || target != null // target is null? Accept message anyways...
                 && !"*".equals(target)
-                && !plugin.getServerName().equalsIgnoreCase(target)
+                && !plugin.getServerName().equals(target)
                 && !("group:" + plugin.getServerGroup()).equalsIgnoreCase(target) ) {
             // This message is not for us
             return;
