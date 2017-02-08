@@ -158,11 +158,8 @@ public abstract class ServerMessenger {
                     if (query != null) {
                         query.stopTimeout();
                         queries.remove(playerId);
-                        player = plugin.getServer().getPlayer(playerId);
-                        if (player != null && player.isOnline()) {
-                            PlayerData data = (PlayerData) getObject(args[1]);
-                            plugin.applyData(data);
-                        }
+                        PlayerData data = (PlayerData) getObject(args[1]);
+                        plugin.applyData(data);
                     }
                     break;
 

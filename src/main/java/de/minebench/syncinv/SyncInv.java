@@ -11,6 +11,7 @@ import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -252,7 +253,15 @@ public final class SyncInv extends JavaPlugin {
         runSync(new BukkitRunnable() {
             public void run() {
                 Player player = getServer().getPlayer(data.getPlayerId());
-                if(player != null && player.isOnline()) {
+
+                if (getOpenInv() != null && player == null || !player.isOnline()){
+                    OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
+                    if (offlinePlayer.hasPlayedBefore()) {
+                        player = getOpenInv().loadPlayer(offlinePlayer);
+                    }
+                }
+
+                if(player != null) {
                     player.setTotalExperience(0);
                     player.setLevel(0);
                     player.setExp(0);
@@ -265,7 +274,7 @@ public final class SyncInv extends JavaPlugin {
                     player.giveExp(data.getExp());
                     // players will associate the level up sound from the exp giving with the successful load of the inventory
                     // --> play sound also if the player does not level up
-                    if (player.getLevel() < 1) {
+                    if (player.isOnline() && player.getLevel() < 1) {
                         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
                     }
                     // Try to fix the maps if we should do it
@@ -286,7 +295,9 @@ public final class SyncInv extends JavaPlugin {
                     player.getInventory().setContents(data.getInventory());
                     player.getEnderChest().setContents(data.getEnderchest());
                     player.addPotionEffects(data.getPotionEffects());
-                    player.updateInventory();
+                    if (player.isOnline()) {
+                        player.updateInventory();
+                    }
                 }
             }
         });
