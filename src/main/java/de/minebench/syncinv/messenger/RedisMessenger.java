@@ -16,15 +16,113 @@ package de.minebench.syncinv.messenger;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisURI;
+import com.lambdaworks.redis.api.StatefulRedisConnection;
+import com.lambdaworks.redis.codec.ByteArrayCodec;
+import com.lambdaworks.redis.codec.RedisCodec;
+import com.lambdaworks.redis.codec.StringCodec;
+import com.lambdaworks.redis.pubsub.RedisPubSubListener;
+import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
+import com.lambdaworks.redis.pubsub.api.async.RedisPubSubAsyncCommands;
 import de.minebench.syncinv.SyncInv;
-// TODO: Implement messenger
+import org.bukkit.util.io.BukkitObjectInputStream;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.nio.ByteBuffer;
+import java.util.logging.Level;
+
 public class RedisMessenger extends ServerMessenger {
+    private final RedisClient client;
+
     public RedisMessenger(SyncInv plugin) {
         super(plugin);
+        RedisURI uri = new RedisURI();
+        if (plugin.getConfig().isSet("redis.uri")) {
+            uri = RedisURI.create(plugin.getConfig().getString("redis.uri"));
+        }
+        if (plugin.getConfig().isSet("redis.host")) {
+            uri.setHost(plugin.getConfig().getString("redis.host"));
+        }
+        if (plugin.getConfig().isSet("redis.port")) {
+            uri.setPort(plugin.getConfig().getInt("redis.port"));
+        }
+        if (plugin.getConfig().isSet("redis.password")) {
+            uri.setPassword(plugin.getConfig().getString("redis.password"));
+        }
+        if (plugin.getConfig().isSet("redis.timeout")) {
+            uri.setTimeout(plugin.getConfig().getInt("redis.timeout"));
+        }
+        client = RedisClient.create(uri);
+
+        StatefulRedisPubSubConnection<String, byte[]> connection = client.connectPubSub(new StringByteArrayCodec());
+        connection.addListener(new RedisPubSubListener<String, byte[]>() {
+            @Override
+            public void message(String channel, byte[] bytes) {
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+                     ObjectInput in = new BukkitObjectInputStream(bis)){
+                    String sender = in.readUTF();
+                    MessageType type = MessageType.valueOf(in.readUTF().toUpperCase());
+                    plugin.runSync(() -> onMessage(sender, channel, type, in));
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + "redis channel! ", e);
+                }
+            }
+
+            @Override
+            public void message(String pattern, String channel, byte[] message) {}
+
+            @Override
+            public void subscribed(String channel, long count) {}
+
+            @Override
+            public void psubscribed(String pattern, long count) {}
+
+            @Override
+            public void unsubscribed(String channel, long count) {}
+
+            @Override
+            public void punsubscribed(String pattern, long count) {}
+        });
+
+        RedisPubSubAsyncCommands<String, byte[]> async = connection.async();
+        async.subscribe("*");
+        async.subscribe("group:" + getServerGroup());
+        async.subscribe(getServerName());
     }
 
     @Override
-    public void sendMessage(String target, MessageType type, byte[]... data) {
+    public void sendMessage(String target, Message message) {
+        try (StatefulRedisConnection<String, byte[]> connection = client.connect(new StringByteArrayCodec())) {
+            connection.async().publish(target, message.toByteArray());
+        }
+    }
 
+    private class StringByteArrayCodec implements RedisCodec<String, byte[]> {
+
+        private final StringCodec stringCodec = new StringCodec();
+        private final ByteArrayCodec byteArrayCodec = new ByteArrayCodec();
+
+        @Override
+        public String decodeKey(ByteBuffer bytes) {
+            return stringCodec.decodeKey(bytes);
+        }
+
+        @Override
+        public byte[] decodeValue(ByteBuffer bytes) {
+            return byteArrayCodec.decodeValue(bytes);
+        }
+
+        @Override
+        public ByteBuffer encodeKey(String key) {
+            return stringCodec.encodeKey(key);
+        }
+
+        @Override
+        public ByteBuffer encodeValue(byte[] value) {
+            return byteArrayCodec.encodeValue(value);
+        }
     }
 }

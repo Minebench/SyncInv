@@ -6,20 +6,16 @@ import com.lishid.openinv.OpenInv;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
-import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
@@ -45,16 +41,6 @@ import java.util.UUID;
  */
 
 public final class SyncInv extends JavaPlugin {
-
-    /**
-     * The group that this server is in
-     */
-    private String serverGroup;
-
-    /**
-     * The name of this server, should be the same as in the Bungee's config.yml
-     */
-    private String serverName;
 
     /**
      * Whether or not we should query the inventories from other servers
@@ -88,6 +74,7 @@ public final class SyncInv extends JavaPlugin {
         loadConfig();
 
         messenger = new RedisMessenger(this);
+        messenger.hello();
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
@@ -98,7 +85,7 @@ public final class SyncInv extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        getMessenger().sendMessage("group:" + getServerGroup(), MessageType.BYE);
+        getMessenger().goodbye();
     }
 
     public void loadConfig() {
@@ -107,21 +94,11 @@ public final class SyncInv extends JavaPlugin {
 
         queryInventories = getConfig().getBoolean("query-inventories");
 
-        if (messenger != null) {
-            getMessenger().sendMessage("group:" + getServerGroup(), MessageType.BYE);
-        }
-
-        serverGroup = getConfig().getString("serverGroup");
-        serverName = getConfig().getString("server-name");
         queryTimeout = getConfig().getInt("query-timeout");
         shouldFixMaps = getConfig().getBoolean("fix-maps");
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
-        }
-
-        if (messenger != null) {
-            getMessenger().sendMessage("group:" + getServerGroup(), MessageType.HELLO);
         }
     }
 
@@ -196,20 +173,6 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
-     * Get the group that this server is in
-     */
-    public String getServerGroup() {
-        return serverGroup;
-    }
-
-    /**
-     * Get the name of this server, should be the same as in the Bungee's config.yml
-     */
-    public String getServerName() {
-        return serverName;
-    }
-
-    /**
      * Whether or not we should query inventories from other servers
      */
     public boolean shouldQueryInventories() {
@@ -250,54 +213,52 @@ public final class SyncInv extends JavaPlugin {
         if(data == null)
             return;
 
-        runSync(new BukkitRunnable() {
-            public void run() {
-                Player player = getServer().getPlayer(data.getPlayerId());
+        runSync(() -> {
+            Player player = getServer().getPlayer(data.getPlayerId());
 
-                if (getOpenInv() != null && player == null || !player.isOnline()){
-                    OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
-                    if (offlinePlayer.hasPlayedBefore()) {
-                        player = getOpenInv().loadPlayer(offlinePlayer);
-                    }
+            if (getOpenInv() != null && player == null || !player.isOnline()){
+                OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
+                if (offlinePlayer.hasPlayedBefore()) {
+                    player = getOpenInv().loadPlayer(offlinePlayer);
+                }
+            }
+
+            if(player != null) {
+                player.setTotalExperience(0);
+                player.setLevel(0);
+                player.setExp(0);
+                player.getInventory().clear();
+                player.getEnderChest().clear();
+                for (PotionEffect effect : player.getActivePotionEffects()) {
+                    player.removePotionEffect(effect.getType());
                 }
 
-                if(player != null) {
-                    player.setTotalExperience(0);
-                    player.setLevel(0);
-                    player.setExp(0);
-                    player.getInventory().clear();
-                    player.getEnderChest().clear();
-                    for (PotionEffect effect : player.getActivePotionEffects()) {
-                        player.removePotionEffect(effect.getType());
-                    }
-
-                    player.giveExp(data.getExp());
-                    // players will associate the level up sound from the exp giving with the successful load of the inventory
-                    // --> play sound also if the player does not level up
-                    if (player.isOnline() && player.getLevel() < 1) {
-                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
-                    }
-                    // Try to fix the maps if we should do it
-                    if (shouldFixMaps) {
-                        File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
-                        for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
-                            File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
-                            if (mapFile.canWrite()) {
-                                checkMap(map.getKey());
-                                try {
-                                    Files.write(mapFile.toPath(), map.getValue());
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+                player.giveExp(data.getExp());
+                // players will associate the level up sound from the exp giving with the successful load of the inventory
+                // --> play sound also if the player does not level up
+                if (player.isOnline() && player.getLevel() < 1) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
+                }
+                // Try to fix the maps if we should do it
+                if (shouldFixMaps) {
+                    File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
+                    for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
+                        File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
+                        if (mapFile.canWrite()) {
+                            checkMap(map.getKey());
+                            try {
+                                Files.write(mapFile.toPath(), map.getValue());
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         }
                     }
-                    player.getInventory().setContents(data.getInventory());
-                    player.getEnderChest().setContents(data.getEnderchest());
-                    player.addPotionEffects(data.getPotionEffects());
-                    if (player.isOnline()) {
-                        player.updateInventory();
-                    }
+                }
+                player.getInventory().setContents(data.getInventory());
+                player.getEnderChest().setContents(data.getEnderchest());
+                player.addPotionEffects(data.getPotionEffects());
+                if (player.isOnline()) {
+                    player.updateInventory();
                 }
             }
         });
@@ -315,20 +276,20 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Make sure that a task runs on the primary thread
      */
-    public void runSync(BukkitRunnable run) {
+    public void runSync(Runnable run) {
         if(getServer().isPrimaryThread()) {
             run.run();
         } else {
-            run.runTask(this);
+            getServer().getScheduler().runTask(this, run);
         }
     }
 
     /**
      * Make sure that a task does not run on the primary thread
      */
-    public void runAsync(BukkitRunnable run) {
+    public void runAsync(Runnable run) {
         if(!getServer().isPrimaryThread()) {
-            run.runTaskAsynchronously(this);
+            getServer().getScheduler().runTaskAsynchronously(this, run);
         } else {
             run.run();
         }

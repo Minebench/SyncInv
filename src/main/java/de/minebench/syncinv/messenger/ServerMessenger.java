@@ -40,6 +40,16 @@ public abstract class ServerMessenger {
     private final SyncInv plugin;
 
     /**
+     * The group that this server is in
+     */
+    private String serverGroup;
+
+    /**
+     * The name of this server, should be the same as in the Bungee's config.yml
+     */
+    private String serverName;
+
+    /**
      * Store a set of all known servers
      */
     private Set<String> servers = new HashSet<>();
@@ -56,7 +66,22 @@ public abstract class ServerMessenger {
 
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
-        sendMessage("group:" + plugin.getServerGroup(), MessageType.HELLO);
+        serverGroup = plugin.getConfig().getString("server-group");
+        serverName = plugin.getConfig().getString("server-name");
+    }
+
+    /**
+     * Be polite and introduce yourself!
+     */
+    public void hello() {
+        sendMessage("group:" + getServerGroup(), MessageType.HELLO);
+    }
+
+    /**
+     * Be polite and say goodbye
+     */
+    public void goodbye() {
+        sendMessage("group:" + getServerGroup(), MessageType.BYE);
     }
 
     /**
@@ -75,35 +100,30 @@ public abstract class ServerMessenger {
         query.setTimeoutTask(plugin.runLater(() -> finishQuery(query), 20 * plugin.getQueryTimeout()));
         queries.put(playerId, query);
 
-        sendMessage("group:" + plugin.getServerGroup(), MessageType.GET_LAST_SEEN);
+        sendMessage("group:" + getServerGroup(), MessageType.GET_LAST_SEEN);
 
         return query;
     }
 
     /**
      * Reaction on a message, this has to be called by the messenger implementation!
-     * @param sender The server that send the message
-     * @param target The server this message is targeted at
-     * @param type The type of request
-     * @param args The arguments
+     * @param sender    The server that send the message
+     * @param target    The server this message is targeted at
+     * @param type      The type of request
+     * @param in        The input data
      */
-    private void onMessage(String sender, String target, MessageType type, byte[]... args) {
-        if (sender.equals(plugin.getServerName()) // don't read messages from ourselves
+    protected void onMessage(String sender, String target, MessageType type, ObjectInput in) {
+        if (sender.equals(getServerName()) // don't read messages from ourselves
                 || target != null // target is null? Accept message anyways...
                 && !"*".equals(target)
-                && !plugin.getServerName().equals(target)
-                && !("group:" + plugin.getServerGroup()).equalsIgnoreCase(target) ) {
+                && !getServerName().equals(target)
+                && !("group:" + getServerGroup()).equalsIgnoreCase(target) ) {
             // This message is not for us
             return;
         }
 
         if (!servers.contains(sender)) {
             servers.add(sender);
-        }
-
-        if (args.length < type.getArgCount()) {
-            plugin.getLogger().log(Level.SEVERE, "Received an invalid " + type + " request! It needs " + type.getArgCount() + " but only has " + (args.length - 1));
-            return;
         }
 
         UUID playerId;
@@ -113,16 +133,16 @@ public abstract class ServerMessenger {
         try {
             switch (type) {
                 case GET_LAST_SEEN:
-                    playerId = UUID.fromString(getString(args[0]));
+                    playerId = UUID.fromString(in.readUTF());
                     lastSeen = plugin.getLastSeen(playerId, true);
-                    sendMessage(sender, MessageType.LAST_SEEN, toByteArray(playerId.toString()), toByteArray(lastSeen)); // Send the last seen date to the server that requested it
+                    sendMessage(sender, MessageType.LAST_SEEN, playerId, lastSeen); // Send the last seen date to the server that requested it
                     break;
 
                 case LAST_SEEN:
-                    playerId = UUID.fromString(getString(args[0]));
+                    playerId = UUID.fromString(in.readUTF());
                     query = queries.get(playerId);
                     if (query != null) { // No query was started? Why are we getting this message?
-                        lastSeen = getLong(args[1]);
+                        lastSeen = in.readLong();
                         query.addResponse(sender, lastSeen);
 
                         if (query.getServers().size() == servers.size()) { // All known servers responded
@@ -132,33 +152,33 @@ public abstract class ServerMessenger {
                     break;
 
                 case GET_DATA:
-                    playerId = UUID.fromString(getString(args[0]));
+                    playerId = UUID.fromString(in.readUTF());
                     player = plugin.getServer().getPlayer(playerId);
                     if (player != null && player.isOnline()) { // Player is still online
                         queueDataRequest(playerId, sender);
-                        sendMessage(sender, MessageType.IS_ONLINE, toByteArray(playerId.toString())); // Tell the sender
+                        sendMessage(sender, MessageType.IS_ONLINE, playerId); // Tell the sender
                         break;
                     } else if (plugin.getOpenInv() != null){
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
                         if (offlinePlayer.hasPlayedBefore()) {
                             player = plugin.getOpenInv().loadPlayer(offlinePlayer);
                             if (player != null) {
-                                sendMessage(sender, MessageType.DATA, objectToByteArray(new PlayerData(player)));
+                                sendMessage(sender, MessageType.DATA, new PlayerData(player));
                                 break;
                             }
                         }
                     } else {
-                        sendMessage(sender, MessageType.CANT_GET_DATA, toByteArray(playerId.toString())); // Tell the sender that we have no ability to load the data
+                        sendMessage(sender, MessageType.CANT_GET_DATA, playerId); // Tell the sender that we have no ability to load the data
                     }
                     break;
 
                 case DATA:
-                    playerId = UUID.fromString(getString(args[0]));
+                    playerId = UUID.fromString(in.readUTF());
                     query = queries.get(playerId);
                     if (query != null) {
                         query.stopTimeout();
                         queries.remove(playerId);
-                        PlayerData data = (PlayerData) getObject(args[1]);
+                        PlayerData data = (PlayerData) in.readObject();
                         plugin.applyData(data);
                     }
                     break;
@@ -170,7 +190,7 @@ public abstract class ServerMessenger {
 
                 case CANT_GET_DATA:
                     // Send the player to the server if we can't get the data and he has an open request
-                    playerId = UUID.fromString(getString(args[1]));
+                    playerId = UUID.fromString(in.readUTF());
                     if (hasQuery(playerId)) {
                         queries.remove(playerId);
                         plugin.connectToServer(playerId, sender);
@@ -179,7 +199,7 @@ public abstract class ServerMessenger {
 
                 case HELLO:
                     servers.add(sender);
-                    if (!plugin.getServerName().equalsIgnoreCase(target)) {
+                    if (!getServerName().equalsIgnoreCase(target)) {
                         // Only answer if we were targeted as a group, not if he replied to a single server
                         sendMessage(sender, MessageType.HELLO);
                     }
@@ -193,7 +213,7 @@ public abstract class ServerMessenger {
                     plugin.getLogger().log(Level.WARNING, "Received an unsupported " + type + " request!");
             }
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Received an invalid " + type + " request!", e);
         }
     }
 
@@ -204,7 +224,7 @@ public abstract class ServerMessenger {
         if (youngestServer == null) { // This is the youngest server
             queries.remove(query.getPlayerId()); // Let the player play
         } else if (plugin.shouldQueryInventories()){
-            sendMessage(youngestServer, MessageType.GET_DATA, toByteArray(query.getPlayerId().toString())); // Query the player's data
+            sendMessage(youngestServer, new Message(MessageType.DATA, query.getPlayerId())); // Query the player's data
             query.setTimeoutTask(plugin.runLater(() -> queries.remove(query.getPlayerId()), 20 * plugin.getQueryTimeout()));
         } else {
             plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
@@ -213,14 +233,25 @@ public abstract class ServerMessenger {
     }
 
     /**
-     * Send a message to other servers
-     * @param target The name of the target server;
-     *               use "group:<group>" to only send to a specific group of servers;
-     *               use "*" to send it to everyone
-     * @param type The type of the message
-     * @param data The data bytes of this message
+     * Send a simple message with only a type to other servers
+     * @param target    The name of the target server;
+     *                  use "group:<group>" to only send to a specific group of servers;
+     *                  use "*" to send it to everyone
+     * @param type      The type of the message to send
+     * @param objects   The data to send in the order the exact order
      */
-    public abstract void sendMessage(String target, MessageType type, byte[]... data);
+    public void sendMessage(String target, MessageType type, Object... objects) {
+        sendMessage(target, new Message(type, objects));
+    }
+
+    /**
+     * Send a message to other servers
+     * @param target    The name of the target server;
+     *                  use "group:<group>" to only send to a specific group of servers;
+     *                  use "*" to send it to everyone
+     * @param message   The message to send
+     */
+    public abstract void sendMessage(String target, Message message);
 
     /**
      * Check whether or not a player has an active query
@@ -250,6 +281,20 @@ public abstract class ServerMessenger {
     }
 
     /**
+     * Get the group that this server is in
+     */
+    public String getServerGroup() {
+        return serverGroup;
+    }
+
+    /**
+     * Get the name of this server, should be the same as in the Bungee's config.yml
+     */
+    public String getServerName() {
+        return serverName;
+    }
+
+    /**
      * Send the data to the server that requested it
      * @param data The player's data
      */
@@ -258,62 +303,8 @@ public abstract class ServerMessenger {
         if (servers != null) {
             queuedDataRequests.remove(data.getPlayerId());
             for (String server : servers) {
-                sendMessage(server, MessageType.DATA, objectToByteArray(data));
+                sendMessage(server, new Message(MessageType.DATA, data));
             }
-        }
-    }
-
-    private byte[] toByteArray(long l) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutput out = new BukkitObjectOutputStream(bos);
-            out.writeLong(l);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bos.toByteArray();
-    }
-
-    private byte[] toByteArray(String s) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutput out = new BukkitObjectOutputStream(bos);
-            out.writeChars(s);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bos.toByteArray();
-    }
-
-    private byte[] objectToByteArray(Object o) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutput out = new BukkitObjectOutputStream(bos);
-            out.writeObject(o);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bos.toByteArray();
-    }
-
-    private Long getLong(byte[] bytes) throws IOException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-             ObjectInput in = new BukkitObjectInputStream(bis)){
-            return in.readLong();
-        }
-    }
-
-    private String getString(byte[] bytes) throws IOException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-             ObjectInput in = new BukkitObjectInputStream(bis)){
-            return in.readUTF();
-        }
-    }
-
-    private Object getObject(byte[] bytes) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-             ObjectInput in = new BukkitObjectInputStream(bis)){
-            return in.readObject();
         }
     }
 }

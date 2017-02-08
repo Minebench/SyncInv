@@ -1,10 +1,19 @@
+# Redis messenger settings
+redis:
+  host: localhost
+  port: 6379
+  timeout: 60
+  password: password1
+# you can also directly set the uri for example like this (directly set values overwrite uri parameter 'though):
+# uri: redis://password1@localhost:6379/database?timeout=60s [&database=database]
+
 # Whether or not the plugin should query inventories on other server
 # or just move the player to the server with the newest inventory
 query-inventories: true
 
 # The name of the group this server is in. Set that to the same value
 # on all servers which's data you want to get synced.
-group: survival
+server-group: survival
 
 # The name of this server. If you don't want to query inventories then
 # this has to be the same as the name in your BungeeCord's config.yml
@@ -14,7 +23,7 @@ server-name: server1 # CHANGE THIS!
 # respond to a query
 query-timeout: 5
 
-#Should the plugin try to fix maps that were transferred over?
+# Should the plugin try to fix maps that were transferred over?
 fix-maps: true
 
 # Language settings
