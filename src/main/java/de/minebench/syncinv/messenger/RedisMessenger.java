@@ -61,13 +61,17 @@ public class RedisMessenger extends ServerMessenger {
         connection.addListener(new RedisPubSubListener<String, byte[]>() {
             @Override
             public void message(String channel, byte[] bytes) {
+                if (bytes.length == 0) {
+                    plugin.getLogger().log(Level.WARNING, "Received a message with 0 bytes on " + channel + " redis channel? ");
+                    return;
+                }
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
                      ObjectInput in = new BukkitObjectInputStream(bis)){
                     String sender = in.readUTF();
                     MessageType type = MessageType.valueOf(in.readUTF().toUpperCase());
                     plugin.runSync(() -> onMessage(sender, channel, type, in));
                 } catch (IOException e) {
-                    plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + "redis channel! ", e);
+                    plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + " redis channel! ", e);
                 }
             }
 
@@ -96,7 +100,7 @@ public class RedisMessenger extends ServerMessenger {
     @Override
     public void sendMessage(String target, Message message) {
         try (StatefulRedisConnection<String, byte[]> connection = client.connect(new StringByteArrayCodec())) {
-            connection.async().publish(target, message.toByteArray());
+            connection.async().publish(target, message.toByteArray(getServerName()));
         }
     }
 
