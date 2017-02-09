@@ -152,15 +152,17 @@ public abstract class ServerMessenger {
                     if (player != null && player.isOnline()) { // Player is still online
                         queueDataRequest(playerId, sender);
                         sendMessage(sender, MessageType.IS_ONLINE, playerId); // Tell the sender
-                        break;
                     } else if (plugin.getOpenInv() != null){
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
                         if (offlinePlayer.hasPlayedBefore()) {
-                            player = plugin.getOpenInv().loadPlayer(offlinePlayer);
-                            if (player != null) {
-                                sendMessage(sender, MessageType.DATA, new PlayerData(player));
-                                break;
-                            }
+                            plugin.runAsync(() -> {
+                                Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
+                                if (p != null) {
+                                    sendMessage(sender, MessageType.DATA, new PlayerData(p));
+                                } else {
+                                    sendMessage(sender, MessageType.CANT_GET_DATA, playerId); // Tell the sender that we can't load the data
+                                }
+                            });
                         }
                     } else {
                         sendMessage(sender, MessageType.CANT_GET_DATA, playerId); // Tell the sender that we have no ability to load the data
