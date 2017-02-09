@@ -90,7 +90,9 @@ public final class SyncInv extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        getMessenger().goodbye();
+        if (getMessenger() != null) {
+            getMessenger().goodbye();
+        }
     }
 
     public void loadConfig() {
