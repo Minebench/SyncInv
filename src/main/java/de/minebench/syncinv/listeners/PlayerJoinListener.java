@@ -2,7 +2,9 @@ package de.minebench.syncinv.listeners;
 
 import de.minebench.syncinv.SyncInv;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 /*
@@ -28,8 +30,10 @@ public class PlayerJoinListener implements Listener {
         this.plugin = plugin;
     }
 	
-	@EventHandler(ignoreCancelled = true)
-	public void onPlayerJoin(PlayerJoinEvent e) {
-        plugin.getMessenger().queryData(e.getPlayer().getUniqueId());
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onPlayerJoin(AsyncPlayerPreLoginEvent e) {
+        if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+            plugin.getMessenger().queryData(e.getUniqueId());
+        }
     }
 }
