@@ -27,6 +27,7 @@ public class PlayerDataQuery {
     private final UUID playerId;
     private final long localLastSeen;
     private BukkitTask timeoutTask;
+    private boolean completed = false;
 
     private Map<String, Long> servers = new ConcurrentHashMap<>();
 
@@ -89,5 +90,19 @@ public class PlayerDataQuery {
             timeoutTask.cancel();
             timeoutTask = null;
         }
+    }
+
+    /**
+     * Set the status of this query to completed (all servers responded)
+     */
+    public void complete() {
+        completed = true;
+    }
+
+    /**
+     * @return Whether or not this query was marked as completed (all servers responded)
+     */
+    public boolean isCompleted() {
+        return completed;
     }
 }

@@ -23,6 +23,11 @@ server-name: server1 # CHANGE THIS!
 # respond to a query
 query-timeout: 5
 
+# Whether or not we should load the data from queries that timed out
+# This might run into issues if the server with the most recent data
+# is not online at the moment of querying!
+apply-timed-out-queries: false
+
 # Should the plugin try to fix maps that were transferred over?
 fix-maps: true
 
@@ -33,3 +38,4 @@ lang:
   cant-drop-items: "&cDu kannst erst Items droppen wenn deine Spielerdaten geladen sind!"
   cant-move: "&cDu kannst dich erst bewegen wenn deine Spielerdaten geladen sind!"
   wait-for-loading: "&cBitte warte bis deine Spielerdaten geladen sind!"
+  cant-load-data: "&cTut uns leid aber der Server konnte nicht deine aktuellen Daten laden. Kontaktiere die Serverleitung wenn dies öfter passieren sollte!"

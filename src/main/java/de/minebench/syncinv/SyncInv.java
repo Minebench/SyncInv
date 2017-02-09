@@ -64,6 +64,11 @@ public final class SyncInv extends JavaPlugin {
     private int queryTimeout;
 
     /**
+     * Should we apply data of queries that weren't answered by every server
+     */
+    private boolean applyTimedOutQueries;
+
+    /**
      * Should the plugin try to fix maps that were transferred over?
      */
     private boolean shouldFixMaps;
@@ -95,6 +100,8 @@ public final class SyncInv extends JavaPlugin {
         queryInventories = getConfig().getBoolean("query-inventories");
 
         queryTimeout = getConfig().getInt("query-timeout");
+        applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
+
         shouldFixMaps = getConfig().getBoolean("fix-maps");
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
@@ -184,6 +191,13 @@ public final class SyncInv extends JavaPlugin {
      */
     public int getQueryTimeout() {
         return queryTimeout;
+    }
+
+    /**
+     * Whether or not we should apply data of queries that weren't answered by every server
+     */
+    public boolean applyTimedOutQueries() {
+        return applyTimedOutQueries;
     }
 
     /**
@@ -297,5 +311,23 @@ public final class SyncInv extends JavaPlugin {
 
     public BukkitTask runLater(Runnable runnable, int delay) {
         return getServer().getScheduler().runTaskLater(this, runnable, delay);
+    }
+
+    public void sendMessage(UUID playerId, String key) {
+        runSync(() -> {
+            Player player = getServer().getPlayer(playerId);
+            if (player != null) {
+                player.sendMessage(getLang(key));
+            }
+        });
+    }
+
+    public void kick(UUID playerId, String key) {
+        runSync(() -> {
+            Player player = getServer().getPlayer(playerId);
+            if (player != null) {
+                player.kickPlayer(getLang(key));
+            }
+        });
     }
 }

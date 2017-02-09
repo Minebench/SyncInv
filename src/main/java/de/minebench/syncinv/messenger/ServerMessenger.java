@@ -92,7 +92,7 @@ public abstract class ServerMessenger {
 
         long lastSeen = plugin.getLastSeen(playerId, false);
         PlayerDataQuery query = new PlayerDataQuery(playerId, lastSeen);
-        query.setTimeoutTask(plugin.runLater(() -> finishQuery(query), 20 * plugin.getQueryTimeout()));
+        query.setTimeoutTask(plugin.runLater(() -> completeQuery(query), 20 * plugin.getQueryTimeout()));
         queries.put(playerId, query);
 
         sendMessage("group:" + getServerGroup(), MessageType.GET_LAST_SEEN);
@@ -140,8 +140,8 @@ public abstract class ServerMessenger {
                         lastSeen = in.readLong();
                         query.addResponse(sender, lastSeen);
 
-                        if (query.getServers().size() == servers.size()) { // All known servers responded
-                            finishQuery(query);
+                        if (isCompleted(query)) { // All known servers responded
+                            completeQuery(query);
                         }
                     }
                     break;
@@ -212,19 +212,45 @@ public abstract class ServerMessenger {
         }
     }
 
-    private void finishQuery(PlayerDataQuery query) {
+    private void completeQuery(PlayerDataQuery query) {
         query.stopTimeout();
+
+        if (!query.isCompleted() && !plugin.applyTimedOutQueries() && !isCompleted(query)) {
+            plugin.sendMessage(query.getPlayerId(), "cant-load-data");
+            plugin.kick(query.getPlayerId(), "cant-load-data");
+            return;
+        }
 
         String youngestServer = query.getYoungestServer();
         if (youngestServer == null) { // This is the youngest server
             queries.remove(query.getPlayerId()); // Let the player play
         } else if (plugin.shouldQueryInventories()){
-            sendMessage(youngestServer, new Message(MessageType.DATA, query.getPlayerId())); // Query the player's data
+            sendMessage(youngestServer, MessageType.DATA, query.getPlayerId()); // Query the player's data
             query.setTimeoutTask(plugin.runLater(() -> queries.remove(query.getPlayerId()), 20 * plugin.getQueryTimeout()));
         } else {
             plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
             queries.remove(query.getPlayerId());
         }
+    }
+
+    /**
+     * Check if a query was answered by all known servers
+     * @param query The query to check
+     * @return      Whether or not all servers responded
+     */
+    private boolean isCompleted(PlayerDataQuery query) {
+        if (query.getServers().size() != servers.size()) {
+            return false;
+        }
+
+        for (String server : servers) {
+            if (!query.getServers().containsKey(server)) {
+                return false;
+            }
+        }
+
+        query.complete();
+        return true;
     }
 
     /**
