@@ -22,39 +22,45 @@ public enum MessageType {
      * or a group it will get a targeted response of the same kind
      */
     HELLO,
+
     /**
      * Be polite and say bye so that others don't have to wait on you.
      */
     BYE,
+
     /**
      * Get the time a player was last seen. <br />
      * 1. arg - the player's uuid as a string
      * returns LAST_SEEN
      */
     GET_LAST_SEEN(1),
+
     /**
      * Answers a GET_LAST_SEEN request with the time a player was last seen. <br />
      * 1. arg - the player's uuid as a string <br />
      * 2. arg - the timestamp as a long
      */
     LAST_SEEN(2),
+
     /**
      * Get the data of a player <br />
      * 1. arg - the player's uuid as a string
      * returns DATA
      */
     GET_DATA(1),
+
     /**
      * Answers a GET_DATA request with the player's PlayerData object. <br />
-     * 1. arg - the player's uuid as a string <br />
-     * 2. arg - the PlayerData object
+     * 1. arg - the PlayerData object
      */
     DATA(1),
+
     /**
      * Tells us that a player is online. <br />
      * 1. arg - the player's uuid as a string
      */
     IS_ONLINE(1),
+
     /**
      * The server failed to load the data of a player. <br />
      * 1. arg - the player's uuid as a string

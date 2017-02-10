@@ -7,6 +7,7 @@ import org.bukkit.potion.PotionEffect;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,7 @@ import java.util.UUID;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-public class PlayerData {
+public class PlayerData implements Serializable {
     private final UUID playerId;
     private final int exp;
     private final ItemStack[] inventory;
@@ -164,7 +165,7 @@ public class PlayerData {
     public static List<Short> getMapIds(ItemStack[] items) {
         List<Short> mapIds = new ArrayList<>();
         for (ItemStack item : items) {
-            if (item.getType() == Material.MAP) {
+            if (item != null && item.getType() == Material.MAP) {
                 mapIds.add(item.getDurability());
             }
         }

@@ -36,6 +36,7 @@ import java.util.logging.Level;
 
 public class RedisMessenger extends ServerMessenger {
     private final RedisClient client;
+    private StatefulRedisConnection<String, byte[]> connection;
 
     public RedisMessenger(SyncInv plugin) {
         super(plugin);
@@ -67,10 +68,8 @@ public class RedisMessenger extends ServerMessenger {
                 }
                 try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
                      ObjectInput in = new BukkitObjectInputStream(bis)){
-                    String sender = in.readUTF();
-                    MessageType type = MessageType.valueOf(in.readUTF().toUpperCase());
-                    plugin.runSync(() -> onMessage(sender, channel, type, in));
-                } catch (IOException e) {
+                    onMessage(channel, (Message) in.readObject());
+                } catch (IOException | ClassNotFoundException e) {
                     plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + " redis channel! ", e);
                 }
             }
@@ -98,9 +97,14 @@ public class RedisMessenger extends ServerMessenger {
     }
 
     @Override
-    public void sendMessage(String target, Message message) {
-        try (StatefulRedisConnection<String, byte[]> connection = client.connect(new StringByteArrayCodec())) {
-            connection.async().publish(target, message.toByteArray(getServerName()));
+    protected void sendMessageImplementation(String target, Message message, boolean sync) {
+        if (connection == null || !connection.isOpen()) {
+            connection = client.connect(new StringByteArrayCodec());
+        }
+        if (sync) {
+            connection.sync().publish(target, message.toByteArray());
+        } else {
+            connection.async().publish(target, message.toByteArray());
         }
     }
 

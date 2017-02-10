@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /*
  * Copyright 2017 Phoenix616 All rights reserved.
@@ -73,6 +74,16 @@ public final class SyncInv extends JavaPlugin {
      */
     private boolean shouldFixMaps;
 
+    /**
+     * Whether or not the plugin is currently disabling
+     */
+    private boolean disabling = false;
+
+    /**
+     * Whether or not the plugin is in debugging mode
+     */
+    private boolean debug;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -90,6 +101,7 @@ public final class SyncInv extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        disabling = true;
         if (getMessenger() != null) {
             getMessenger().goodbye();
         }
@@ -98,6 +110,8 @@ public final class SyncInv extends JavaPlugin {
     public void loadConfig() {
         saveDefaultConfig();
         reloadConfig();
+
+        debug = getConfig().getBoolean("debug");
 
         queryInventories = getConfig().getBoolean("query-inventories");
 
@@ -253,7 +267,7 @@ public final class SyncInv extends JavaPlugin {
                 // players will associate the level up sound from the exp giving with the successful load of the inventory
                 // --> play sound also if the player does not level up
                 if (player.isOnline() && player.getLevel() < 1) {
-                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
+                    playLoadSound(player);
                 }
                 // Try to fix the maps if we should do it
                 if (shouldFixMaps) {
@@ -281,6 +295,25 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
+     * The sound to play when a player gets unlocked, should match the vanilla levelup
+     * @param playerId  The uuid of the Player to play the sound to
+     */
+    public void playLoadSound(UUID playerId) {
+        Player player = getServer().getPlayer(playerId);
+        if (player != null) {
+            playLoadSound(player);
+        }
+    }
+
+    /**
+     * The sound to play when a player gets unlocked, should match the vanilla levelup
+     * @param player    The Player to play the sound to
+     */
+    public void playLoadSound(Player player) {
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
+    }
+
+    /**
      * Make sure that we have maps with that id
      */
     private void checkMap(short id) {
@@ -293,7 +326,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task runs on the primary thread
      */
     public void runSync(Runnable run) {
-        if(getServer().isPrimaryThread()) {
+        if(getServer().isPrimaryThread() || disabling) {
             run.run();
         } else {
             getServer().getScheduler().runTask(this, run);
@@ -304,7 +337,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task does not run on the primary thread
      */
     public void runAsync(Runnable run) {
-        if(!getServer().isPrimaryThread()) {
+        if(!getServer().isPrimaryThread() && !disabling) {
             getServer().getScheduler().runTaskAsynchronously(this, run);
         } else {
             run.run();
@@ -331,5 +364,11 @@ public final class SyncInv extends JavaPlugin {
                 player.kickPlayer(getLang(key));
             }
         });
+    }
+
+    public void logDebug(String message) {
+        if (debug) {
+            getLogger().log(Level.INFO, "Debug: " + message);
+        }
     }
 }
