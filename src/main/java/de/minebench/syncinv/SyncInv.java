@@ -262,6 +262,7 @@ public final class SyncInv extends JavaPlugin {
                 for (PotionEffect effect : player.getActivePotionEffects()) {
                     player.removePotionEffect(effect.getType());
                 }
+                player.resetMaxHealth();
 
                 player.giveExp(data.getExp());
                 // players will associate the level up sound from the exp giving with the successful load of the inventory
@@ -287,6 +288,19 @@ public final class SyncInv extends JavaPlugin {
                 player.getInventory().setContents(data.getInventory());
                 player.getEnderChest().setContents(data.getEnderchest());
                 player.addPotionEffects(data.getPotionEffects());
+                player.setMaxHealth(data.getMaxHealth());
+                player.setHealthScaled(data.isHealthScaled());
+                player.setHealthScale(data.getHealthScale());
+                player.setHealth(data.getHealth());
+                player.setFoodLevel(data.getFoodLevel());
+                player.setExhaustion(data.getExhaustion());
+                player.setMaximumAir(data.getMaxAir());
+                player.setRemainingAir(data.getRemainingAir());
+                player.setFireTicks(data.getFireTicks());
+                player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
+                player.setNoDamageTicks(data.getNoDamageTicks());
+                player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+                player.setVelocity(data.getVelocity());
                 if (player.isOnline()) {
                     player.updateInventory();
                 }

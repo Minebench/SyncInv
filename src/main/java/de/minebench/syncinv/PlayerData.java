@@ -1,9 +1,12 @@
 package de.minebench.syncinv;
 
+import lombok.Getter;
+import lombok.ToString;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +36,8 @@ import java.util.UUID;
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
+@ToString
+@Getter
 public class PlayerData implements Serializable {
     private final UUID playerId;
     private final int exp;
@@ -41,6 +45,19 @@ public class PlayerData implements Serializable {
     private final ItemStack[] enderchest;
     private final Collection<PotionEffect> potionEffects;
     private final Map<Short, byte[]> mapFiles = new HashMap<>();
+    private final double maxHealth;
+    private final double health;
+    private final boolean isHealthScaled;
+    private final double healthScale;
+    private final int foodLevel;
+    private final float exhaustion;
+    private final int maxAir;
+    private final int remainingAir;
+    private final int fireTicks;
+    private final int maxNoDamageTicks;
+    private final int noDamageTicks;
+    private final Vector velocity;
+    private final int heldItemSlot;
 
     public PlayerData(Player player) {
         this.playerId = player.getUniqueId();
@@ -48,6 +65,19 @@ public class PlayerData implements Serializable {
         this.inventory = player.getInventory().getContents();
         this.enderchest = player.getEnderChest().getContents();
         this.potionEffects = player.getActivePotionEffects();
+        this.maxHealth = player.getMaxHealth();
+        this.health = player.getHealth();
+        this.isHealthScaled = player.isHealthScaled();
+        this.healthScale = player.getHealthScale();
+        this.foodLevel = player.getFoodLevel();
+        this.exhaustion = player.getExhaustion();
+        this.maxAir = player.getMaximumAir();
+        this.remainingAir = player.getRemainingAir();
+        this.fireTicks = player.getFireTicks();
+        this.maxNoDamageTicks = player.getMaximumNoDamageTicks();
+        this.noDamageTicks = player.getNoDamageTicks();
+        this.velocity = player.getVelocity();
+        this.heldItemSlot = player.getInventory().getHeldItemSlot();
 
         // Load maps that are in the inventory/enderchest
         Set<Short> mapIdSet = new HashSet<>(); // Use set to only add each id once
@@ -66,50 +96,6 @@ public class PlayerData implements Serializable {
                 }
             }
         }
-    }
-
-    public UUID getPlayerId() {
-        return playerId;
-    }
-
-    public int getExp() {
-        return exp;
-    }
-
-    public ItemStack[] getInventory() {
-        return inventory;
-    }
-
-    public ItemStack[] getEnderchest() {
-        return enderchest;
-    }
-
-    public Collection<PotionEffect> getPotionEffects() {
-        return potionEffects;
-    }
-
-    public Map<Short, byte[]> getMapFiles() {
-        return mapFiles;
-    }
-
-    public String toString() {
-        String r = "PlayerData{playerId=" + playerId + ",exp=" + exp + ",inventory={";
-        for(ItemStack item : inventory) {
-            r += item + ",";
-        }
-        r += "},enderchest=";
-        for(ItemStack item : enderchest) {
-            r += item + ",";
-        }
-        r += "},potionEffects=";
-        for(PotionEffect effect : potionEffects) {
-            r += effect + ",";
-        }
-        r += "},mapFiles=";
-        for(Map.Entry<Short, byte[]> map : mapFiles.entrySet()) {
-            r += "[" + map.getKey() + "," + map.getValue().length + "],";
-        }
-        return r + "}}";
     }
 
     /**
