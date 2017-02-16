@@ -22,6 +22,11 @@ server-group: survival
 # this has to be the same as the name in your BungeeCord's config.yml
 server-name: server1 # CHANGE THIS!
 
+# Whether or not we should sync the data with all servers in a group
+# when a player logs out. Use this if your servers have the tendency
+# to not always be online.
+sync-with-group-on-logout: true
+
 # The amount of seconds we should maximally wait for all servers to
 # respond to a query
 query-timeout: 5

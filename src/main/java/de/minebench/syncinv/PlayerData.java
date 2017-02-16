@@ -39,6 +39,7 @@ import java.util.UUID;
 @ToString
 @Getter
 public class PlayerData implements Serializable {
+    private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final int exp;
     private final ItemStack[] inventory;

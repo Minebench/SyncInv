@@ -67,14 +67,14 @@ public abstract class ServerMessenger {
      * Be polite and introduce yourself!
      */
     public void hello() {
-        sendMessage("group:" + getServerGroup(), MessageType.HELLO);
+        sendGroupMessage(MessageType.HELLO);
     }
 
     /**
      * Be polite and say goodbye
      */
     public void goodbye() {
-        sendMessageImplementation("group:" + getServerGroup(), new Message(getServerName(), MessageType.BYE), true);
+        sendMessage("group:" + getServerGroup(), new Message(getServerName(), MessageType.BYE), true);
     }
 
     /**
@@ -98,7 +98,7 @@ public abstract class ServerMessenger {
         query.setTimeoutTask(plugin.runLater(() -> completeQuery(query), 20 * plugin.getQueryTimeout()));
         queries.put(playerId, query);
 
-        sendMessage("group:" + getServerGroup(), MessageType.GET_LAST_SEEN, playerId);
+        sendGroupMessage(MessageType.GET_LAST_SEEN, playerId);
 
         return query;
     }
@@ -153,7 +153,9 @@ public abstract class ServerMessenger {
                     playerId = (UUID) message.read();
                     player = plugin.getServer().getPlayer(playerId);
                     if (player != null && player.isOnline()) { // Player is still online
-                        queueDataRequest(playerId, message.getSender());
+                        if (!plugin.shouldSyncWithGroupOnLogout()) {
+                            queueDataRequest(playerId, message.getSender());
+                        }
                         sendMessage(message.getSender(), MessageType.IS_ONLINE, playerId); // Tell the sender
                     } else if (plugin.getOpenInv() != null){
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
@@ -175,10 +177,12 @@ public abstract class ServerMessenger {
                 case DATA:
                     PlayerData data = (PlayerData) message.read();
                     query = queries.get(data.getPlayerId());
-                    if (query != null) {
+                    if (query != null || plugin.shouldSyncWithGroupOnLogout() && plugin.getLastSeen(data.getPlayerId(), true) < data.getTimeStamp()) {
                         plugin.applyData(data);
-                        query.stopTimeout();
-                        queries.remove(data.getPlayerId());
+                        if (query != null) {
+                            query.stopTimeout();
+                            queries.remove(data.getPlayerId());
+                        }
                     }
                     break;
 
@@ -288,6 +292,15 @@ public abstract class ServerMessenger {
     public void sendMessage(String target, Message message, boolean sync) {
         plugin.logDebug("Sending " + (sync ? "sync " : "") + message.getType() + " to " + target + " containing " + message.getData().size() + " objects.");
         sendMessageImplementation(target, message, sync);
+    }
+
+    /**
+     * Send a simple message with only a type to other all servers of the group
+     * @param type      The type of the message to send
+     * @param objects   The data to send in the order the exact order
+     */
+    public void sendGroupMessage(MessageType type, Object... objects) {
+        sendMessage("group:" + getServerGroup(), type, objects);
     }
 
     protected abstract void sendMessageImplementation(String target, Message message, boolean sync);

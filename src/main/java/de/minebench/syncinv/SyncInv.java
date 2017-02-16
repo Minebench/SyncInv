@@ -60,6 +60,11 @@ public final class SyncInv extends JavaPlugin {
     private ServerMessenger messenger;
 
     /**
+     * Sync data with all servers in a group when a player logs out
+     */
+    private boolean syncWithGroupOnLogout;
+
+    /**
      * The amount of seconds we should wait for a query to stopTimeout
      */
     private int queryTimeout;
@@ -114,6 +119,8 @@ public final class SyncInv extends JavaPlugin {
         debug = getConfig().getBoolean("debug");
 
         queryInventories = getConfig().getBoolean("query-inventories");
+
+        syncWithGroupOnLogout = getConfig().getBoolean("sync-with-group-on-logout");
 
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
@@ -203,6 +210,13 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
+     * Sync data with all servers in a group when a player logs out
+     */
+    public boolean shouldSyncWithGroupOnLogout() {
+        return syncWithGroupOnLogout;
+    }
+
+    /**
      * Get the amount of seconds we should wait for a query to stopTimeout
      */
     public int getQueryTimeout() {
@@ -237,73 +251,88 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Apply a PlayerData object to its player
-     * @param data
+     * @param data  The data to apply
      */
     public void applyData(PlayerData data) {
-        if(data == null)
+        if (data == null)
             return;
 
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
-
-            if (getOpenInv() != null && player == null || !player.isOnline()){
-                OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
-                if (offlinePlayer.hasPlayedBefore()) {
-                    player = getOpenInv().loadPlayer(offlinePlayer);
-                }
+            if (player != null && player.isOnline()) {
+                applyData(player, data);
+            } else if (getOpenInv() != null) {
+                runAsync(() -> {
+                    OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
+                    if (offlinePlayer.hasPlayedBefore()) {
+                        Player oPlayer = getOpenInv().loadPlayer(offlinePlayer);
+                        if (oPlayer != null) {
+                            applyData(oPlayer, data);
+                        }
+                    }
+                });
+            } else {
+                getLogger().log(Level.WARNING, "Could not apply data for player " + data.getPlayerId() + " as he isn't online and we don't have OpenInv installed!");
             }
+        });
+    }
 
-            if(player != null) {
-                player.setTotalExperience(0);
-                player.setLevel(0);
-                player.setExp(0);
-                player.getInventory().clear();
-                player.getEnderChest().clear();
-                for (PotionEffect effect : player.getActivePotionEffects()) {
-                    player.removePotionEffect(effect.getType());
-                }
-                player.resetMaxHealth();
+    /**
+     * Apply a PlayerData object to a player
+     * @param player    The player to apply the data to
+     * @param data      The data to apply
+     */
+    public void applyData(Player player, PlayerData data) {
+        runSync(() -> {
+            player.setTotalExperience(0);
+            player.setLevel(0);
+            player.setExp(0);
+            player.getInventory().clear();
+            player.getEnderChest().clear();
+            for (PotionEffect effect : player.getActivePotionEffects()) {
+                player.removePotionEffect(effect.getType());
+            }
+            player.resetMaxHealth();
 
-                player.giveExp(data.getExp());
-                // players will associate the level up sound from the exp giving with the successful load of the inventory
-                // --> play sound also if the player does not level up
-                if (player.isOnline() && player.getLevel() < 1) {
-                    playLoadSound(player);
-                }
-                // Try to fix the maps if we should do it
-                if (shouldFixMaps) {
-                    File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
-                    for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
-                        File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
-                        if (mapFile.canWrite()) {
-                            checkMap(map.getKey());
-                            try {
-                                Files.write(mapFile.toPath(), map.getValue());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+            player.giveExp(data.getExp());
+            // players will associate the level up sound from the exp giving with the successful load of the inventory
+            // --> play sound also if the player does not level up
+            if (player.isOnline() && player.getLevel() < 1) {
+                playLoadSound(player);
+            }
+            // Try to fix the maps if we should do it
+            if (shouldFixMaps) {
+                File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
+                for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
+                    File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
+                    if (mapFile.canWrite()) {
+                        checkMap(map.getKey());
+                        try {
+                            Files.write(mapFile.toPath(), map.getValue());
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }
-                player.getInventory().setContents(data.getInventory());
-                player.getEnderChest().setContents(data.getEnderchest());
-                player.addPotionEffects(data.getPotionEffects());
-                player.setMaxHealth(data.getMaxHealth());
-                player.setHealthScaled(data.isHealthScaled());
-                player.setHealthScale(data.getHealthScale());
-                player.setHealth(data.getHealth());
-                player.setFoodLevel(data.getFoodLevel());
-                player.setExhaustion(data.getExhaustion());
-                player.setMaximumAir(data.getMaxAir());
-                player.setRemainingAir(data.getRemainingAir());
-                player.setFireTicks(data.getFireTicks());
-                player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
-                player.setNoDamageTicks(data.getNoDamageTicks());
-                player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
-                player.setVelocity(data.getVelocity());
-                if (player.isOnline()) {
-                    player.updateInventory();
-                }
+            }
+            player.getInventory().setContents(data.getInventory());
+            player.getEnderChest().setContents(data.getEnderchest());
+            player.addPotionEffects(data.getPotionEffects());
+            player.setMaxHealth(data.getMaxHealth());
+            player.setHealthScaled(data.isHealthScaled());
+            player.setHealthScale(data.getHealthScale());
+            player.setHealth(data.getHealth());
+            player.setFoodLevel(data.getFoodLevel());
+            player.setExhaustion(data.getExhaustion());
+            player.setMaximumAir(data.getMaxAir());
+            player.setRemainingAir(data.getRemainingAir());
+            player.setFireTicks(data.getFireTicks());
+            player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
+            player.setNoDamageTicks(data.getNoDamageTicks());
+            player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+            player.setVelocity(data.getVelocity());
+            if (player.isOnline()) {
+                player.updateInventory();
             }
         });
     }

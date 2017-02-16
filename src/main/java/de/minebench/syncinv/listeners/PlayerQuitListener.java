@@ -2,6 +2,7 @@ package de.minebench.syncinv.listeners;
 
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
+import de.minebench.syncinv.messenger.MessageType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -37,10 +38,14 @@ public class PlayerQuitListener implements Listener {
 			//TODO: what do we do now? Just applying the data to the offline player would be the best thing to do imo
 		}
 
-		Set<String> servers = plugin.getMessenger().getQueuedDataRequest(event.getPlayer().getUniqueId());
-		if (servers != null && !servers.isEmpty()) {
-			PlayerData data = new PlayerData(event.getPlayer());
-			plugin.getMessenger().fulfillQueuedDataRequest(data);
+		if (plugin.shouldSyncWithGroupOnLogout()) {
+			plugin.getMessenger().sendGroupMessage(MessageType.DATA, new PlayerData(event.getPlayer()));
+		} else {
+			Set<String> servers = plugin.getMessenger().getQueuedDataRequest(event.getPlayer().getUniqueId());
+			if (servers != null && !servers.isEmpty()) {
+				PlayerData data = new PlayerData(event.getPlayer());
+				plugin.getMessenger().fulfillQueuedDataRequest(data);
+			}
 		}
 	}
 
