@@ -160,14 +160,12 @@ public abstract class ServerMessenger {
                     } else if (plugin.getOpenInv() != null){
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
                         if (offlinePlayer.hasPlayedBefore()) {
-                            plugin.runAsync(() -> {
-                                Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
-                                if (p != null) {
-                                    sendMessage(message.getSender(), MessageType.DATA, new PlayerData(p));
-                                } else {
-                                    sendMessage(message.getSender(), MessageType.CANT_GET_DATA, playerId); // Tell the sender that we can't load the data
-                                }
-                            });
+                            Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
+                            if (p != null) {
+                                sendMessage(message.getSender(), MessageType.DATA, new PlayerData(p));
+                            } else {
+                                sendMessage(message.getSender(), MessageType.CANT_GET_DATA, playerId); // Tell the sender that we can't load the data
+                            }
                         }
                     } else {
                         sendMessage(message.getSender(), MessageType.CANT_GET_DATA, playerId); // Tell the sender that we have no ability to load the data

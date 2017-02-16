@@ -259,31 +259,16 @@ public final class SyncInv extends JavaPlugin {
 
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
-            if (player != null && player.isOnline()) {
-                applyData(player, data);
-            } else if (getOpenInv() != null) {
-                runAsync(() -> {
-                    OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
-                    if (offlinePlayer.hasPlayedBefore()) {
-                        Player oPlayer = getOpenInv().loadPlayer(offlinePlayer);
-                        if (oPlayer != null) {
-                            applyData(oPlayer, data);
-                        }
-                    }
-                });
-            } else {
-                getLogger().log(Level.WARNING, "Could not apply data for player " + data.getPlayerId() + " as he isn't online and we don't have OpenInv installed!");
+            if (getOpenInv() != null && (player == null || player.isOnline())) {
+                OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
+                if (offlinePlayer.hasPlayedBefore()) {
+                    player = getOpenInv().loadPlayer(offlinePlayer);
+                }
             }
-        });
-    }
-
-    /**
-     * Apply a PlayerData object to a player
-     * @param player    The player to apply the data to
-     * @param data      The data to apply
-     */
-    public void applyData(Player player, PlayerData data) {
-        runSync(() -> {
+            if (player == null) {
+                getLogger().log(Level.WARNING, "Could not apply data for player " + data.getPlayerId() + " as he isn't online and we don't have OpenInv installed!");
+                return;
+            }
             player.setTotalExperience(0);
             player.setLevel(0);
             player.setExp(0);
