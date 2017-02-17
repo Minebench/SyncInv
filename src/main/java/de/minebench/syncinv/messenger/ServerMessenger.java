@@ -16,6 +16,8 @@ package de.minebench.syncinv.messenger;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import org.bukkit.OfflinePlayer;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public abstract class ServerMessenger {
@@ -193,7 +196,6 @@ public abstract class ServerMessenger {
                     // Send the player to the server if we can't get the data and he has an open request
                     playerId = (UUID) message.read();
                     if (hasQuery(playerId)) {
-                        queries.remove(playerId);
                         plugin.connectToServer(playerId, message.getSender());
                     }
                     break;
@@ -243,7 +245,6 @@ public abstract class ServerMessenger {
             }, 20 * plugin.getQueryTimeout()));
         } else {
             plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
-            queries.remove(query.getPlayerId());
         }
     }
 
@@ -309,6 +310,23 @@ public abstract class ServerMessenger {
      */
     public boolean hasQuery(UUID playerId) {
         return queries.containsKey(playerId);
+    }
+
+    /**
+     * Get the active query of a player
+     * @param playerId The UUID of the player
+     */
+    public PlayerDataQuery getQuery(UUID playerId) {
+        return queries.get(playerId);
+    }
+
+    /**
+     * Remove an active query of a player
+     * @param playerId  The UUID of the player
+     * @return          The previous PlayerDataQuery if there was one
+     */
+    public PlayerDataQuery removeQuery(UUID playerId) {
+        return queries.remove(playerId);
     }
 
     /**

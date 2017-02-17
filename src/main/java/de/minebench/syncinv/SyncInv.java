@@ -1,5 +1,7 @@
 package de.minebench.syncinv;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /*
@@ -177,10 +180,10 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get the date when a player last logged out
-     * @param playerId The UUID of the player
-     * @param online Whether or not it should return the current time if the player is online
-     * @return The timestamp of his last known data on the server in milliseconds;
-     * 0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
+     * @param playerId  The UUID of the player
+     * @param online    Whether or not it should return the current time if the player is online
+     * @return          The timestamp of his last known data on the server in milliseconds;
+     *                  0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
      */
     public long getLastSeen(UUID playerId, boolean online) {
         if (online) {
@@ -192,6 +195,19 @@ public final class SyncInv extends JavaPlugin {
         File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         File playerDat = new File(playerDataFolder, playerId + ".dat");
         return playerDat.lastModified();
+    }
+
+    /**
+     * Set the date when a player last logged out (by setting the file modify time)
+     * @param playerId  The UUID of the player
+     * @param timeStamp The timestamp to set as the last modify time of the file in
+     *                  milliseconds.
+     * @return          true if the time was successfully set
+     */
+    public boolean setLastSeen(UUID playerId, long timeStamp) {
+        File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
+        File playerDat = new File(playerDataFolder, playerId + ".dat");
+        return playerDat.setLastModified(timeStamp);
     }
 
     /**
