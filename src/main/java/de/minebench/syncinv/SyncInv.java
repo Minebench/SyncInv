@@ -8,6 +8,8 @@ import com.lishid.openinv.OpenInv;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
+import de.minebench.syncinv.messenger.Message;
+import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import org.bukkit.ChatColor;
@@ -110,6 +112,9 @@ public final class SyncInv extends JavaPlugin {
     @Override
     public void onDisable() {
         disabling = true;
+        for (Player player : getServer().getOnlinePlayers()) {
+            getMessenger().sendGroupMessage(new Message(getMessenger().getServerName(), MessageType.DATA, new PlayerData(player)), true);
+        }
         if (getMessenger() != null) {
             getMessenger().goodbye();
         }

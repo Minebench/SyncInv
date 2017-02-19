@@ -294,12 +294,21 @@ public abstract class ServerMessenger {
     }
 
     /**
-     * Send a simple message with only a type to other all servers of the group
+     * Send a simple message with only a type to all servers of the group
      * @param type      The type of the message to send
      * @param objects   The data to send in the order the exact order
      */
     public void sendGroupMessage(MessageType type, Object... objects) {
         sendMessage("group:" + getServerGroup(), type, objects);
+    }
+
+    /**
+     * Send a message to all servers of the group
+     * @param message   The message to send
+     * @param sync      Whether the message should be send sync or on its own thread
+     */
+    public void sendGroupMessage(Message message, boolean sync) {
+        sendMessage("group:" + getServerGroup(), message, sync);
     }
 
     protected abstract void sendMessageImplementation(String target, Message message, boolean sync);
