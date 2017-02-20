@@ -1,7 +1,5 @@
 package de.minebench.syncinv;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
@@ -18,6 +16,7 @@ import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.map.MapView;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
@@ -27,7 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /*
@@ -310,10 +308,12 @@ public final class SyncInv extends JavaPlugin {
             if (shouldFixMaps) {
                 File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
                 for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
+                    logDebug("Attempting to save map " + map.getKey());
                     File mapFile = new File(mapDataDir, "map_" + map.getKey() + ".dat");
-                    if (mapFile.canWrite()) {
+                    if (!mapFile.exists() || mapFile.canWrite()) {
                         checkMap(map.getKey());
                         try {
+                            logDebug("Writing map " + map.getKey());
                             Files.write(mapFile.toPath(), map.getValue());
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -366,8 +366,10 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that we have maps with that id
      */
     private void checkMap(short id) {
+        logDebug("Checking map " + id);
         while (getServer().getMap(id) == null) {
-            getServer().createMap(getServer().getWorlds().get(0));
+            MapView map = getServer().createMap(getServer().getWorlds().get(0));
+            logDebug("Created map " + map.getId());
         }
     }
 

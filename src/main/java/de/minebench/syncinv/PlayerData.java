@@ -5,6 +5,7 @@ import lombok.ToString;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
@@ -88,7 +89,20 @@ public class PlayerData implements Serializable {
         // Load the map file data contents
         File mapDataDir = new File(player.getServer().getWorlds().get(0).getWorldFolder(), "data");
         for (Short mapId : mapIdSet) {
-            File mapFile = new File(mapDataDir, "map_" + mapId + ".dat");
+            MapView map = player.getServer().getMap(mapId);
+            if (!map.isVirtual()) {
+                File mapFile = new File(mapDataDir, "map_" + mapId + ".dat");
+                if (mapFile.exists() && mapFile.isFile() && mapFile.canRead()) {
+                    try {
+                        mapFiles.put(mapId, Files.readAllBytes(mapFile.toPath()));
+                        continue;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            mapFiles.put(mapId, new byte[0]);
+            File mapFile = new File(mapDataDir, "map_0.dat");
             if (mapFile.exists() && mapFile.isFile() && mapFile.canRead()) {
                 try {
                     mapFiles.put(mapId, Files.readAllBytes(mapFile.toPath()));
