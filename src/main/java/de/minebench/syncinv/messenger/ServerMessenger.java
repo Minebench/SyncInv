@@ -187,9 +187,16 @@ public abstract class ServerMessenger {
                     }
                     break;
 
+                case MAP_CREATED:
+                    if (plugin.shouldSyncMaps()) {
+                        short mapId = (short) message.read();
+                        plugin.checkMap(mapId);
+                    }
+                    break;
+
                 case IS_ONLINE:
                     // Do we want to do something if the player is online on the other server?
-                    // playerId = UUID.fromString(getString(args[1]));
+                    // playerId = (UUID) message.read();
                     break;
 
                 case CANT_GET_DATA:

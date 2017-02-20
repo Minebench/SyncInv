@@ -30,7 +30,7 @@ public enum MessageType {
 
     /**
      * Get the time a player was last seen. <br />
-     * 1. arg - the player's uuid as a string
+     * 1. arg - the player's uuid
      * returns LAST_SEEN
      */
     GET_LAST_SEEN(1),
@@ -44,7 +44,7 @@ public enum MessageType {
 
     /**
      * Get the data of a player <br />
-     * 1. arg - the player's uuid as a string
+     * 1. arg - the player's uuid
      * returns DATA
      */
     GET_DATA(1),
@@ -57,15 +57,21 @@ public enum MessageType {
 
     /**
      * Tells us that a player is online. <br />
-     * 1. arg - the player's uuid as a string
+     * 1. arg - the player's uuid
      */
     IS_ONLINE(1),
 
     /**
      * The server failed to load the data of a player. <br />
-     * 1. arg - the player's uuid as a string
+     * 1. arg - the player's uuid
      */
-    CANT_GET_DATA(1);
+    CANT_GET_DATA(1),
+
+    /**
+     * Send whenever a MapInitializeEvent is called to keep the latest id in sync. <br />
+     * 1. arg - the id of the map created as a short
+     */
+    MAP_CREATED(1);
 
     private final int argCount;
 

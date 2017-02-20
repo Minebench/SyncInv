@@ -3,6 +3,7 @@ package de.minebench.syncinv;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
+import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
@@ -80,7 +81,7 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Should the plugin try to fix maps that were transferred over?
      */
-    private boolean shouldFixMaps;
+    private boolean shouldSyncMaps;
 
     /**
      * Whether or not the plugin is currently disabling
@@ -103,6 +104,7 @@ public final class SyncInv extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerFreezeListener(this), this);
+        getServer().getPluginManager().registerEvents(new MapCreationListener(this), this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
     }
@@ -131,7 +133,7 @@ public final class SyncInv extends JavaPlugin {
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
-        shouldFixMaps = getConfig().getBoolean("fix-maps");
+        shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
@@ -222,6 +224,13 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
+     * Should the plugin try to keep maps in sync?
+     */
+    public boolean shouldSyncMaps() {
+        return shouldSyncMaps;
+    }
+
+    /**
      * Whether or not we should query inventories from other servers
      */
     public boolean shouldQueryInventories() {
@@ -305,7 +314,7 @@ public final class SyncInv extends JavaPlugin {
                 playLoadSound(player);
             }
             // Try to fix the maps if we should do it
-            if (shouldFixMaps) {
+            if (shouldSyncMaps) {
                 File mapDataDir = new File(getServer().getWorlds().get(0).getWorldFolder(), "data");
                 for (Map.Entry<Short, byte[]> map : data.getMapFiles().entrySet()) {
                     logDebug("Attempting to save map " + map.getKey());
@@ -365,7 +374,7 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Make sure that we have maps with that id
      */
-    private void checkMap(short id) {
+    public void checkMap(short id) {
         logDebug("Checking map " + id);
         while (getServer().getMap(id) == null) {
             MapView map = getServer().createMap(getServer().getWorlds().get(0));

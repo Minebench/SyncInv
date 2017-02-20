@@ -36,8 +36,8 @@ query-timeout: 5
 # is not online at the moment of querying!
 apply-timed-out-queries: false
 
-# Should the plugin try to fix maps that were transferred over?
-fix-maps: true
+# Should the plugin try to keep maps in sync?
+sync-maps: true
 
 # Language settings
 lang:
