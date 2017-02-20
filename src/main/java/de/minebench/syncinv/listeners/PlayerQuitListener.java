@@ -50,11 +50,11 @@ public class PlayerQuitListener implements Listener {
 
 
         if (plugin.shouldSyncWithGroupOnLogout()) {
-            plugin.getMessenger().sendGroupMessage(MessageType.DATA, new PlayerData(event.getPlayer()));
+            plugin.getMessenger().sendGroupMessage(MessageType.DATA, plugin.getData(event.getPlayer()));
         } else {
             Set<String> servers = plugin.getMessenger().getQueuedDataRequest(event.getPlayer().getUniqueId());
             if (servers != null && !servers.isEmpty()) {
-                PlayerData data = new PlayerData(event.getPlayer());
+                PlayerData data = plugin.getData(event.getPlayer());
                 plugin.getMessenger().fulfillQueuedDataRequest(data);
             }
         }

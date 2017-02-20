@@ -16,8 +16,6 @@ package de.minebench.syncinv.messenger;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import org.bukkit.OfflinePlayer;
@@ -29,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public abstract class ServerMessenger {
@@ -165,7 +162,7 @@ public abstract class ServerMessenger {
                         if (offlinePlayer.hasPlayedBefore()) {
                             Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
                             if (p != null) {
-                                sendMessage(message.getSender(), MessageType.DATA, new PlayerData(p));
+                                sendMessage(message.getSender(), MessageType.DATA, plugin.getData(p));
                             } else {
                                 sendMessage(message.getSender(), MessageType.CANT_GET_DATA, playerId); // Tell the sender that we can't load the data
                             }
