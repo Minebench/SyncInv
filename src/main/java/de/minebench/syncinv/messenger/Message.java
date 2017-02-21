@@ -1,5 +1,7 @@
 package de.minebench.syncinv.messenger;
 
+import lombok.Getter;
+import lombok.ToString;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import java.io.ByteArrayOutputStream;
@@ -25,8 +27,10 @@ import java.util.Queue;
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+@Getter
+@ToString
 public class Message implements Serializable {
-
+    private static final long serialVersionUID = 8984920305324L;
     private final String sender;
     private final MessageType type;
     private final Queue<Object> data = new ArrayDeque<>();
@@ -48,25 +52,9 @@ public class Message implements Serializable {
         }
     }
 
-    public String getSender() {
-        return sender;
-    }
-
-    public MessageType getType() {
-        return type;
-    }
-
     public Message add(Object o) {
         data.add(o);
         return this;
-    }
-
-    /**
-     * Get the data
-     * @return The data Queue
-     */
-    public Queue getData() {
-        return data;
     }
 
     /**
