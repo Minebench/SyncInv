@@ -1,10 +1,12 @@
 package de.minebench.syncinv;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import org.bukkit.map.MapView;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /*
  * Copyright 2017 Phoenix616 All rights reserved.
@@ -23,21 +25,22 @@ import java.io.Serializable;
  */
 @ToString
 @Getter
+@EqualsAndHashCode
 public class MapData implements Serializable {
     private static final long serialVersionUID = 74390249021942L;
-    private int centerX;
-    private int centerZ;
-    private MapView.Scale scale;
-    private byte[] colors;
+    private final short id;
+    private final UUID worldId;
+    private final int centerX;
+    private final int centerZ;
+    private final MapView.Scale scale;
+    private final byte[] colors;
 
-    public MapData(int centerX, int centerZ, MapView.Scale scale, byte[] colors) {
+    public MapData(short id, UUID worldId, int centerX, int centerZ, MapView.Scale scale, byte[] colors) {
+        this.id = id;
+        this.worldId = worldId;
         this.centerX = centerX;
         this.centerZ = centerZ;
         this.scale = scale;
         this.colors = colors;
-    }
-
-    public boolean isEmpty() {
-        return colors.length == 0;
     }
 }

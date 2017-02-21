@@ -11,9 +11,9 @@ import org.bukkit.util.Vector;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /*
@@ -41,7 +41,7 @@ public class PlayerData implements Serializable {
     private final ItemStack[] inventory;
     private final ItemStack[] enderchest;
     private final Collection<PotionEffect> potionEffects;
-    private final Map<Short, MapData> maps = new HashMap<>();
+    private final Set<MapData> maps = new HashSet<>();
     private final double maxHealth;
     private final double health;
     private final boolean isHealthScaled;
@@ -136,9 +136,4 @@ public class PlayerData implements Serializable {
         }
         return mapIds;
     }
-
-    public void addMap(Short mapId, MapData map) {
-        maps.put(mapId, map);
-    }
-
 }

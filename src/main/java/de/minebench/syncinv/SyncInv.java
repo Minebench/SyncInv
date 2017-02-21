@@ -25,7 +25,6 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -329,30 +328,37 @@ public final class SyncInv extends JavaPlugin {
             }
             // Try to fix the maps if we should do it
             if (shouldSyncMaps) {
-                for (Map.Entry<Short, MapData> entry : data.getMaps().entrySet()) {
-                    short mapId = entry.getKey();
-                    logDebug("Found map " + mapId + " in inventory");
-                    checkMap(mapId);
-                    MapData mapData = entry.getValue();
-                    if (!mapData.isEmpty()) {
-                        try {
-                            logDebug("Writing colors of map " + mapId);
-                            MapView map = getServer().getMap(mapId);
-                            Object worldMap = fieldWorldMap.get(map);
-                            map.setCenterX(mapData.getCenterX());
-                            map.setCenterZ(mapData.getCenterZ());
-                            map.setScale(mapData.getScale());
-                            Field colorField = worldMap.getClass().getField("colors");
-                            colorField.set(worldMap, mapData.getColors());
-                            player.sendMap(map);
-                        } catch (NoSuchFieldException e) {
-                            getLogger().log(Level.SEVERE, "Could not get WorldMap from map " + mapId + "! ", e);
-                        } catch (IllegalAccessException e) {
-                            getLogger().log(Level.SEVERE, "Could not get colors field from WorldMap class for " + mapId + "! ", e);
+                for (MapData mapData : data.getMaps()) {
+                    logDebug("Found map " + mapData.getId() + " in inventory");
+                    checkMap(mapData.getId());
+                    try {
+                        logDebug("Writing data of map " + mapData.getId());
+                        MapView map = getServer().getMap(mapData.getId());
+                        Object worldMap = fieldWorldMap.get(map);
+                        map.setCenterX(mapData.getCenterX());
+                        map.setCenterZ(mapData.getCenterZ());
+                        map.setScale(mapData.getScale());
+                        Field colorField = worldMap.getClass().getField("colors");
+                        colorField.set(worldMap, mapData.getColors());
+
+                        if (getServer().getWorld(mapData.getWorldId()) != null) {
+                            map.setWorld(getServer().getWorld(mapData.getWorldId()));
+                        } else {
+                            Field dimensionField = worldMap.getClass().getField("map");
+                            dimensionField.set(worldMap, (byte) 127);
+                            Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
+                            worldIdField.setAccessible(true);
+                            worldIdField.set(worldMap, mapData.getWorldId());
                         }
+                        player.sendMap(map);
+                    } catch (NoSuchFieldException e) {
+                        getLogger().log(Level.SEVERE, "Could not get field from map " + mapData.getId() + "! ", e);
+                    } catch (IllegalAccessException e) {
+                        getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
                     }
                 }
             }
+
             player.getInventory().setContents(data.getInventory());
             player.getEnderChest().setContents(data.getEnderchest());
             player.addPotionEffects(data.getPotionEffects());
@@ -383,22 +389,34 @@ public final class SyncInv extends JavaPlugin {
             Set<Short> mapIdSet = new HashSet<>(); // Use set to only add each id once
             mapIdSet.addAll(PlayerData.getMapIds(data.getInventory()));
             mapIdSet.addAll(PlayerData.getMapIds(data.getEnderchest()));
-            // Load the map file data contents
+            // Load the map data contents
             for (Short mapId : mapIdSet) {
                 MapView map = player.getServer().getMap(mapId);
                 try {
                     Object worldMap = fieldWorldMap.get(map);
                     Field colorField = worldMap.getClass().getField("colors");
-                    data.addMap(mapId, new MapData(
+
+                    UUID worldId;
+                    if (map.getWorld() == null) {
+                        Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
+                        worldIdField.setAccessible(true);
+                        worldId = (UUID) worldIdField.get(worldMap);
+                    } else {
+                        worldId = map.getWorld().getUID();
+                    }
+
+                    data.getMaps().add(new MapData(
+                            mapId,
+                            worldId,
                             map.getCenterX(),
                             map.getCenterZ(),
                             map.getScale(),
                             (byte[]) colorField.get(worldMap)
                     ));
-                } catch (IllegalAccessException e) {
-                    getLogger().log(Level.SEVERE, "Could not get WorldMap from map " + mapId + "! ", e);
                 } catch (NoSuchFieldException e) {
-                    getLogger().log(Level.SEVERE, "Could not get colors field from WorldMap class for " + mapId + "! ", e);
+                    getLogger().log(Level.SEVERE, "Could not get field from map " + mapId + "! ", e);
+                } catch (IllegalAccessException e) {
+                    getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapId + "! ", e);
                 }
             }
         }
