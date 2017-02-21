@@ -17,7 +17,6 @@ package de.minebench.syncinv.listeners;
  */
 
 import de.minebench.syncinv.SyncInv;
-import de.minebench.syncinv.messenger.MessageType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
@@ -31,7 +30,8 @@ public class MapCreationListener implements Listener {
 
     @EventHandler
     public void onMapCreation(MapInitializeEvent event) {
-        if (plugin.shouldSyncMaps())
-        plugin.getMessenger().sendGroupMessage(MessageType.MAP_CREATED, event.getMap().getId());
+        if (plugin.shouldSyncMaps()) {
+            plugin.setNewestMap(event.getMap().getId());
+        }
     }
 }

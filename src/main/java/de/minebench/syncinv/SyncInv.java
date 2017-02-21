@@ -11,6 +11,7 @@ import de.minebench.syncinv.messenger.Message;
 import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
+import lombok.Getter;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
@@ -56,11 +57,13 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Reference to the OpenInv plugin to load data for the query option
      */
+    @Getter
     private OpenInv openInv = null;
 
     /**
      * The messenger for communications between the servers
      */
+    @Getter
     private ServerMessenger messenger;
 
     /**
@@ -71,6 +74,7 @@ public final class SyncInv extends JavaPlugin {
     /**
      * The amount of seconds we should wait for a query to stopTimeout
      */
+    @Getter
     private int queryTimeout;
 
     /**
@@ -86,12 +90,20 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Whether or not the plugin is currently disabling
      */
+    @Getter
     private boolean disabling = false;
 
     /**
      * Whether or not the plugin is in debugging mode
      */
+    @Getter
     private boolean debug;
+
+    /**
+     * The id of the newest map that was seen on this server
+     */
+    @Getter
+    private short newestMap = 0;
 
     // Map syncing
     private Field fieldWorldMap;
@@ -229,14 +241,6 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
-     * Get the messenger for communications between the servers
-     * @return The messenger for communications between the servers
-     */
-    public ServerMessenger getMessenger() {
-        return messenger;
-    }
-
-    /**
      * Should the plugin try to keep maps in sync?
      */
     public boolean shouldSyncMaps() {
@@ -255,13 +259,6 @@ public final class SyncInv extends JavaPlugin {
      */
     public boolean shouldSyncWithGroupOnLogout() {
         return syncWithGroupOnLogout;
-    }
-
-    /**
-     * Get the amount of seconds we should wait for a query to stopTimeout
-     */
-    public int getQueryTimeout() {
-        return queryTimeout;
     }
 
     /**
@@ -284,10 +281,6 @@ public final class SyncInv extends JavaPlugin {
             out.writeUTF(server);
             player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
         }
-    }
-
-    public OpenInv getOpenInv() {
-        return openInv;
     }
 
     /**
@@ -447,6 +440,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that we have maps with that id
      */
     public void checkMap(short id) {
+        setNewestMap(id);
         logDebug("Checking map " + id);
         while (getServer().getMap(id) == null) {
             MapView map = getServer().createMap(getServer().getWorlds().get(0));
@@ -501,6 +495,13 @@ public final class SyncInv extends JavaPlugin {
     public void logDebug(String message) {
         if (debug) {
             getLogger().log(Level.INFO, "Debug: " + message);
+        }
+    }
+
+    public void setNewestMap(short newestMap) {
+        if (getNewestMap() < newestMap) {
+            getMessenger().sendGroupMessage(MessageType.MAP_CREATED, newestMap);
+            this.newestMap = newestMap;
         }
     }
 }
