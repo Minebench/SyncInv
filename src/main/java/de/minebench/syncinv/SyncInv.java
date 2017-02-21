@@ -388,14 +388,12 @@ public final class SyncInv extends JavaPlugin {
                 try {
                     Object worldMap = fieldWorldMap.get(map);
                     Field colorField = worldMap.getClass().getField("colors");
+                    byte[] colors = (byte[]) colorField.get(worldMap);
 
-                    UUID worldId;
-                    if (map.getWorld() == null) {
-                        Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
-                        worldIdField.setAccessible(true);
-                        worldId = (UUID) worldIdField.get(worldMap);
-                    } else {
-                        worldId = map.getWorld().getUID();
+                    UUID worldId = getWorldId(map);
+                    if (worldId == null) {
+                        getLogger().log(Level.SEVERE, "Could not get world id for map " + mapId + "!");
+                        continue;
                     }
 
                     data.getMaps().add(new MapData(
@@ -404,7 +402,7 @@ public final class SyncInv extends JavaPlugin {
                             map.getCenterX(),
                             map.getCenterZ(),
                             map.getScale(),
-                            (byte[]) colorField.get(worldMap)
+                            colors
                     ));
                 } catch (NoSuchFieldException e) {
                     getLogger().log(Level.SEVERE, "Could not get field from map " + mapId + "! ", e);
@@ -503,5 +501,28 @@ public final class SyncInv extends JavaPlugin {
             getMessenger().sendGroupMessage(MessageType.MAP_CREATED, newestMap);
             this.newestMap = newestMap;
         }
+    }
+
+    public UUID getWorldId(MapView map) {
+        if (map == null) {
+            return null;
+        }
+        try {
+            Object worldMap = fieldWorldMap.get(map);
+            UUID worldId;
+            if (map.getWorld() == null) {
+                Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
+                worldIdField.setAccessible(true);
+                worldId = (UUID) worldIdField.get(worldMap);
+            } else {
+                worldId = map.getWorld().getUID();
+            }
+            return worldId;
+        } catch (NoSuchFieldException e) {
+            getLogger().log(Level.SEVERE, "Could not get field from map " + map.getId() + "! ", e);
+        } catch (IllegalAccessException e) {
+            getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
+        }
+        return null;
     }
 }
