@@ -58,7 +58,7 @@ public final class SyncInv extends JavaPlugin {
      * Reference to the OpenInv plugin to load data for the query option
      */
     @Getter
-    private OpenInv openInv = null;
+    private OpenInv openInv;
 
     /**
      * The messenger for communications between the servers
@@ -160,9 +160,7 @@ public final class SyncInv extends JavaPlugin {
 
         shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
-        if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
-            openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
-        }
+        openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
