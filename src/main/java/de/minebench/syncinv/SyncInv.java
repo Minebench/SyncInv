@@ -293,7 +293,7 @@ public final class SyncInv extends JavaPlugin {
 
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
-            if (getOpenInv() != null && (player == null || player.isOnline())) {
+            if (getOpenInv() != null && player == null) {
                 OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
                 if (offlinePlayer.hasPlayedBefore()) {
                     player = getOpenInv().loadPlayer(offlinePlayer);
