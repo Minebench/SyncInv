@@ -32,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.logging.Level;
 
 public class RedisMessenger extends ServerMessenger {
@@ -66,10 +67,9 @@ public class RedisMessenger extends ServerMessenger {
                     plugin.getLogger().log(Level.WARNING, "Received a message with 0 bytes on " + channel + " redis channel? ");
                     return;
                 }
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-                     ObjectInput in = new BukkitObjectInputStream(bis)){
-                    onMessage(channel, (Message) in.readObject());
-                } catch (IOException | ClassNotFoundException e) {
+                try {
+                    onMessage(channel, Message.fromByteArray(bytes));
+                } catch (IOException | ClassNotFoundException | IllegalArgumentException e) {
                     plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + " redis channel! ", e);
                 }
             }
