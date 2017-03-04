@@ -18,6 +18,7 @@ package de.minebench.syncinv.messenger;
 
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
+import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -35,11 +36,13 @@ public abstract class ServerMessenger {
     /**
      * The group that this server is in
      */
+    @Getter
     private String serverGroup;
 
     /**
      * The name of this server, should be the same as in the Bungee's config.yml
      */
+    @Getter
     private String serverName;
 
     /**
@@ -60,7 +63,7 @@ public abstract class ServerMessenger {
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
         serverGroup = plugin.getConfig().getString("server-group");
-        serverName = plugin.getConfig().getString("server-name");
+        serverName = plugin.getConfig().getString("server-name", plugin.getServer().getServerName());
     }
 
     /**
@@ -359,20 +362,6 @@ public abstract class ServerMessenger {
      */
     public Set<String> getQueuedDataRequest(UUID playerId) {
         return queuedDataRequests.get(playerId);
-    }
-
-    /**
-     * Get the group that this server is in
-     */
-    public String getServerGroup() {
-        return serverGroup;
-    }
-
-    /**
-     * Get the name of this server, should be the same as in the Bungee's config.yml
-     */
-    public String getServerName() {
-        return serverName;
     }
 
     /**
