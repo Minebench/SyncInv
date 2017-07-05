@@ -2,6 +2,7 @@ package de.minebench.syncinv.messenger;
 
 import lombok.Getter;
 import lombok.ToString;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
@@ -32,6 +33,7 @@ import java.util.Queue;
 @Getter
 @ToString
 public class Message {
+    public static final int VERSION = 2;
     private final String sender;
     private final MessageType type;
     private final Queue<Object> data = new ArrayDeque<>();
@@ -71,8 +73,9 @@ public class Message {
     public byte[] toByteArray() {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutput out = new BukkitObjectOutputStream(bos)) {
+            out.writeInt(VERSION);
             out.writeUTF(getSender());
-            out.writeInt(getType().ordinal());
+            out.writeUTF(getType().toString());
             out.writeInt(data.size());
             for (Object o : data) {
                 out.writeObject(o);
@@ -90,13 +93,20 @@ public class Message {
      * @param bytes The bytes
      * @return      The Message object
      * @throws IOException
+     * @throws IllegalArgumentException         When the message type is not supported
      * @throws ClassNotFoundException
+     * @throws InvalidConfigurationException    If the data is invalid
+     * @throws VersionMismatchException         If the received message is of a different version than it can accept
      */
-    public static Message fromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
+    public static Message fromByteArray(byte[] bytes) throws IOException, IllegalArgumentException, ClassNotFoundException, InvalidConfigurationException, VersionMismatchException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-             ObjectInput in = new BukkitObjectInputStream(bis)){
+             ObjectInput in = new BukkitObjectInputStream(bis)) {
+            int version = in.readInt();
+            if (version != VERSION) {
+                throw new VersionMismatchException(version, VERSION, "The received message is of version " + version + " while this plugin expects version " + VERSION);
+            }
             String sender = in.readUTF();
-            MessageType type = MessageType.values()[in.readInt()];
+            MessageType type = MessageType.valueOf(in.readUTF());
             Object[] data = new Object[in.readInt()];
             for (int i = 0; i < data.length; i++) {
                 data[i] = in.readObject();
@@ -104,4 +114,5 @@ public class Message {
             return new Message(sender, type, data);
         }
     }
+
 }

@@ -26,18 +26,17 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
 import com.lambdaworks.redis.pubsub.api.async.RedisPubSubAsyncCommands;
 import de.minebench.syncinv.SyncInv;
-import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.configuration.InvalidConfigurationException;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInput;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.logging.Level;
 
 public class RedisMessenger extends ServerMessenger {
     private final RedisClient client;
     private StatefulRedisConnection<String, byte[]> connection;
+    private static final String CHANNEL_PREFIX = "syncinv:";
+    private static final String VERSION_PREFIX = Message.VERSION + ":";
 
     public RedisMessenger(SyncInv plugin) {
         super(plugin);
@@ -63,14 +62,24 @@ public class RedisMessenger extends ServerMessenger {
         connection.addListener(new RedisPubSubListener<String, byte[]>() {
             @Override
             public void message(String channel, byte[] bytes) {
+                if (!channel.startsWith(CHANNEL_PREFIX)) {
+                    plugin.getLogger().log(Level.WARNING, "Received a message on " + channel + " even 'though it doesn't belong to our plugin? ");
+                    return;
+                }
+                if (!channel.startsWith(CHANNEL_PREFIX + VERSION_PREFIX)) {
+                    plugin.getLogger().log(Level.WARNING, "Received a message on " + channel + " that doesn't match the accepted version " + Message.VERSION + "! ");
+                    return;
+                }
                 if (bytes.length == 0) {
                     plugin.getLogger().log(Level.WARNING, "Received a message with 0 bytes on " + channel + " redis channel? ");
                     return;
                 }
                 try {
-                    onMessage(channel, Message.fromByteArray(bytes));
-                } catch (IOException | ClassNotFoundException | IllegalArgumentException e) {
+                    onMessage(channel.substring(CHANNEL_PREFIX.length() + VERSION_PREFIX.length()), Message.fromByteArray(bytes));
+                } catch (IOException | ClassNotFoundException | IllegalArgumentException | InvalidConfigurationException e) {
                     plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + " redis channel! ", e);
+                } catch (VersionMismatchException e) {
+                    plugin.getLogger().log(Level.WARNING, e.getMessage() + ". Ignoring message!");
                 }
             }
 
@@ -91,9 +100,14 @@ public class RedisMessenger extends ServerMessenger {
         });
 
         RedisPubSubAsyncCommands<String, byte[]> async = connection.async();
-        async.subscribe("*");
-        async.subscribe("group:" + getServerGroup());
-        async.subscribe(getServerName());
+        for (String channel : getChannels()) {
+            async.subscribe(CHANNEL_PREFIX + VERSION_PREFIX + channel);
+        }
+    }
+
+    @Override
+    protected void close() {
+        connection.close();
     }
 
     @Override
@@ -102,9 +116,9 @@ public class RedisMessenger extends ServerMessenger {
             connection = client.connect(new StringByteArrayCodec());
         }
         if (sync) {
-            connection.sync().publish(target, message.toByteArray());
+            connection.sync().publish(CHANNEL_PREFIX + VERSION_PREFIX + target, message.toByteArray());
         } else {
-            connection.async().publish(target, message.toByteArray());
+            connection.async().publish(CHANNEL_PREFIX + VERSION_PREFIX + target, message.toByteArray());
         }
     }
 

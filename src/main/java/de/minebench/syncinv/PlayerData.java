@@ -34,10 +34,12 @@ import java.util.UUID;
 @ToString
 @Getter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = 4182903812031283L;
+    private static final long serialVersionUID = 4782303812031183L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
-    private final int exp;
+    private final int totalExperience;
+    private final int level;
+    private final float exp;
     private final ItemStack[] inventory;
     private final ItemStack[] enderchest;
     private final Collection<PotionEffect> potionEffects;
@@ -58,7 +60,9 @@ public class PlayerData implements Serializable {
 
     PlayerData(Player player) {
         this.playerId = player.getUniqueId();
-        this.exp = getTotalExperience(player); // No way to properly get the total exp in Bukkit
+        this.totalExperience = player.getTotalExperience();
+        this.level = player.getLevel();
+        this.exp = player.getExp();
         this.inventory = player.getInventory().getContents();
         this.enderchest = player.getEnderChest().getContents();
         this.potionEffects = player.getActivePotionEffects();
@@ -75,51 +79,6 @@ public class PlayerData implements Serializable {
         this.noDamageTicks = player.getNoDamageTicks();
         this.velocity = player.getVelocity();
         this.heldItemSlot = player.getInventory().getHeldItemSlot();
-    }
-
-    /**
-     * Get the exp you need for a certain level. Uses the 1.8 exp math
-     *
-     * Method from Essentials
-     *
-     * @param level The level
-     * @return The exp
-     */
-    public static int getExpAtLevel(final int level) {
-        if (level <= 15) {
-            return (2 * level) + 7;
-        }
-        if ((level >= 16) && (level <= 30)) {
-            return (5 * level) - 38;
-        }
-        return (9 * level) - 158;
-
-    }
-
-    /**
-     * Get the total exp a player has
-     *
-     * This method is required because the Bukkit Player.getTotalExperience() method shows exp that has been 'spent'.
-     *
-     * Without this people would be able to use exp and then still sell it.
-     *
-     * Method from Essentials
-     *
-     * @param player the player to get the total exp from
-     * @return The total exp the player has
-     */
-    public static int getTotalExperience(final Player player) {
-        int exp = Math.round(getExpAtLevel(player.getLevel()) * player.getExp());
-        int currentLevel = player.getLevel();
-
-        while (currentLevel > 0) {
-            currentLevel--;
-            exp += getExpAtLevel(currentLevel);
-        }
-        if (exp < 0) {
-            exp = Integer.MAX_VALUE;
-        }
-        return exp;
     }
 
     /**

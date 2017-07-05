@@ -285,7 +285,7 @@ public final class SyncInv extends JavaPlugin {
      * Apply a PlayerData object to its player
      * @param data  The data to apply
      */
-    public void applyData(PlayerData data) {
+    public void applyData(PlayerData data, Runnable finished) {
         if (data == null)
             return;
 
@@ -301,73 +301,75 @@ public final class SyncInv extends JavaPlugin {
                 getLogger().log(Level.WARNING, "Could not apply data for player " + data.getPlayerId() + " as he isn't online and we don't have OpenInv installed!");
                 return;
             }
-            player.setTotalExperience(0);
-            player.setLevel(0);
-            player.setExp(0);
-            player.getInventory().clear();
-            player.getEnderChest().clear();
-            for (PotionEffect effect : player.getActivePotionEffects()) {
-                player.removePotionEffect(effect.getType());
-            }
-            player.resetMaxHealth();
+            try {
+                player.setTotalExperience(0);
+                player.setLevel(0);
+                player.setExp(0);
+                player.getInventory().clear();
+                player.getEnderChest().clear();
+                for (PotionEffect effect : player.getActivePotionEffects()) {
+                    player.removePotionEffect(effect.getType());
+                }
+                player.resetMaxHealth();
 
-            player.giveExp(data.getExp());
-            // players will associate the level up sound from the exp giving with the successful load of the inventory
-            // --> play sound also if the player does not level up
-            if (player.isOnline() && player.getLevel() < 1) {
-                playLoadSound(player);
-            }
-            // Try to fix the maps if we should do it
-            if (shouldSyncMaps) {
-                for (MapData mapData : data.getMaps()) {
-                    logDebug("Found map " + mapData.getId() + " in inventory");
-                    checkMap(mapData.getId());
-                    try {
-                        logDebug("Writing data of map " + mapData.getId());
-                        MapView map = getServer().getMap(mapData.getId());
-                        Object worldMap = fieldWorldMap.get(map);
-                        map.setCenterX(mapData.getCenterX());
-                        map.setCenterZ(mapData.getCenterZ());
-                        map.setScale(mapData.getScale());
-                        Field colorField = worldMap.getClass().getField("colors");
-                        colorField.set(worldMap, mapData.getColors());
+                player.setTotalExperience(data.getTotalExperience());
+                player.setLevel(data.getLevel());
+                player.setExp(data.getExp());
+                // Try to fix the maps if we should do it
+                if (shouldSyncMaps) {
+                    for (MapData mapData : data.getMaps()) {
+                        logDebug("Found map " + mapData.getId() + " in inventory");
+                        checkMap(mapData.getId());
+                        try {
+                            logDebug("Writing data of map " + mapData.getId());
+                            MapView map = getServer().getMap(mapData.getId());
+                            Object worldMap = fieldWorldMap.get(map);
+                            map.setCenterX(mapData.getCenterX());
+                            map.setCenterZ(mapData.getCenterZ());
+                            map.setScale(mapData.getScale());
+                            Field colorField = worldMap.getClass().getField("colors");
+                            colorField.set(worldMap, mapData.getColors());
 
-                        if (getServer().getWorld(mapData.getWorldId()) != null) {
-                            map.setWorld(getServer().getWorld(mapData.getWorldId()));
-                        } else {
-                            Field dimensionField = worldMap.getClass().getField("map");
-                            dimensionField.set(worldMap, (byte) 127);
-                            Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
-                            worldIdField.setAccessible(true);
-                            worldIdField.set(worldMap, mapData.getWorldId());
+                            if (getServer().getWorld(mapData.getWorldId()) != null) {
+                                map.setWorld(getServer().getWorld(mapData.getWorldId()));
+                            } else {
+                                Field dimensionField = worldMap.getClass().getField("map");
+                                dimensionField.set(worldMap, (byte) 127);
+                                Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
+                                worldIdField.setAccessible(true);
+                                worldIdField.set(worldMap, mapData.getWorldId());
+                            }
+                            player.sendMap(map);
+                        } catch (NoSuchFieldException e) {
+                            getLogger().log(Level.SEVERE, "Could not get field from map " + mapData.getId() + "! ", e);
+                        } catch (IllegalAccessException e) {
+                            getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
                         }
-                        player.sendMap(map);
-                    } catch (NoSuchFieldException e) {
-                        getLogger().log(Level.SEVERE, "Could not get field from map " + mapData.getId() + "! ", e);
-                    } catch (IllegalAccessException e) {
-                        getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
                     }
                 }
-            }
 
-            player.getInventory().setContents(data.getInventory());
-            player.getEnderChest().setContents(data.getEnderchest());
-            player.addPotionEffects(data.getPotionEffects());
-            player.setMaxHealth(data.getMaxHealth());
-            player.setHealth(data.getHealth());
-            player.setFoodLevel(data.getFoodLevel());
-            player.setExhaustion(data.getExhaustion());
-            player.setMaximumAir(data.getMaxAir());
-            player.setRemainingAir(data.getRemainingAir());
-            player.setFireTicks(data.getFireTicks());
-            player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
-            player.setNoDamageTicks(data.getNoDamageTicks());
-            player.setVelocity(data.getVelocity());
-            if (player.isOnline()) {
-                player.setHealthScaled(data.isHealthScaled());
-                player.setHealthScale(data.getHealthScale());
-                player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
-                player.updateInventory();
+                player.getInventory().setContents(data.getInventory());
+                player.getEnderChest().setContents(data.getEnderchest());
+                player.addPotionEffects(data.getPotionEffects());
+                player.setMaxHealth(data.getMaxHealth());
+                player.setHealth(data.getHealth());
+                player.setFoodLevel(data.getFoodLevel());
+                player.setExhaustion(data.getExhaustion());
+                player.setMaximumAir(data.getMaxAir());
+                player.setRemainingAir(data.getRemainingAir());
+                player.setFireTicks(data.getFireTicks());
+                player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
+                player.setNoDamageTicks(data.getNoDamageTicks());
+                player.setVelocity(data.getVelocity());
+                if (player.isOnline()) {
+                    player.setHealthScaled(data.isHealthScaled());
+                    player.setHealthScale(data.getHealthScale());
+                    player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+                    player.updateInventory();
+                }
+                finished.run();
+            } catch (Exception e) {
+                getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
             }
         });
     }

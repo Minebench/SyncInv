@@ -60,10 +60,17 @@ public abstract class ServerMessenger {
      */
     private Map<UUID, Set<String>> queuedDataRequests = new ConcurrentHashMap<>();
 
+    /**
+     * List of channels that this plugin listens on
+     */
+    @Getter
+    private Set<String> channels = new HashSet<>();
+
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
         serverGroup = plugin.getConfig().getString("server-group");
         serverName = plugin.getConfig().getString("server-name", plugin.getServer().getServerName());
+        registerChannel("*", "group:" + serverGroup, serverName);
     }
 
     /**
@@ -78,6 +85,19 @@ public abstract class ServerMessenger {
      */
     public void goodbye() {
         sendMessage("group:" + getServerGroup(), new Message(getServerName(), MessageType.BYE), true);
+        close();
+    }
+
+    protected abstract void close();
+
+    /**
+     * Register channels that this messenger should listen on
+     * @param channels  The channels to listen on
+     */
+    private void registerChannel(String... channels) {
+        for (String channel : channels) {
+            getChannels().add(channel);
+        }
     }
 
     /**
@@ -179,11 +199,12 @@ public abstract class ServerMessenger {
                     PlayerData data = (PlayerData) message.read();
                     query = queries.get(data.getPlayerId());
                     if (query != null || plugin.shouldSyncWithGroupOnLogout() && plugin.getLastSeen(data.getPlayerId(), true) < data.getTimeStamp()) {
-                        plugin.applyData(data);
-                        if (query != null) {
-                            query.stopTimeout();
-                            queries.remove(data.getPlayerId());
-                        }
+                        plugin.applyData(data, () -> {
+                            if (query != null) {
+                                query.stopTimeout();
+                                queries.remove(data.getPlayerId());
+                            }
+                        });
                     }
                     break;
 
