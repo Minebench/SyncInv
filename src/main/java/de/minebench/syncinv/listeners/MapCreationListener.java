@@ -46,7 +46,7 @@ public class MapCreationListener implements Listener {
 
     @EventHandler
     public void onMapScale(PrepareItemCraftEvent event) {
-        if (event.getInventory().getResult().getType() == Material.MAP && event.getInventory().getResult().getAmount() != 2) {
+        if (event.getInventory().getResult() != null && event.getInventory().getResult().getType() == Material.MAP && event.getInventory().getResult().getAmount() != 2) {
             plugin.logDebug(event.getView().getPlayer() + " is trying to scale a map!");
             for (ItemStack item : event.getInventory().getMatrix()) {
                 if (item.getType() == Material.MAP) {
