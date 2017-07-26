@@ -307,8 +307,10 @@ public final class SyncInv extends JavaPlugin {
                 player.setExp(0);
                 player.getInventory().clear();
                 player.getEnderChest().clear();
-                for (PotionEffect effect : player.getActivePotionEffects()) {
-                    player.removePotionEffect(effect.getType());
+                if (player.isOnline()) {
+                    for (PotionEffect effect : player.getActivePotionEffects()) {
+                        player.removePotionEffect(effect.getType());
+                    }
                 }
                 player.resetMaxHealth();
 
