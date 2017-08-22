@@ -352,7 +352,6 @@ public final class SyncInv extends JavaPlugin {
 
                 player.getInventory().setContents(data.getInventory());
                 player.getEnderChest().setContents(data.getEnderchest());
-                player.addPotionEffects(data.getPotionEffects());
                 player.setMaxHealth(data.getMaxHealth());
                 player.setHealth(data.getHealth());
                 player.setFoodLevel(data.getFoodLevel());
@@ -364,6 +363,7 @@ public final class SyncInv extends JavaPlugin {
                 player.setNoDamageTicks(data.getNoDamageTicks());
                 player.setVelocity(data.getVelocity());
                 if (player.isOnline()) {
+                    player.addPotionEffects(data.getPotionEffects());
                     player.setHealthScaled(data.isHealthScaled());
                     player.setHealthScale(data.getHealthScale());
                     player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
