@@ -298,8 +298,12 @@ public final class SyncInv extends JavaPlugin {
                 }
             }
             if (player == null) {
-                getLogger().log(Level.WARNING, "Could not apply data for player " + data.getPlayerId() + " as he isn't online and we don't have OpenInv installed!");
+                logDebug("Could not apply data for player " + data.getPlayerId() + " as he isn't online and "
+                        + (getOpenInv() == null ? "this server doesn't have OpenInv installed!" : "never was online on this server before!"));
                 return;
+            }
+            if (getOpenInv() != null && !player.isOnline()) {
+                getOpenInv().retainPlayer(player, this);
             }
             try {
                 player.setTotalExperience(0);
@@ -372,6 +376,11 @@ public final class SyncInv extends JavaPlugin {
                 finished.run();
             } catch (Exception e) {
                 getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
+            } finally {
+                if (getOpenInv() != null && !player.isOnline()) {
+                    player.saveData();
+                    getOpenInv().releasePlayer(player, this);
+                }
             }
         });
     }

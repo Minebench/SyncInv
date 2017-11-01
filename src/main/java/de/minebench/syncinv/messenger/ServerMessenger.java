@@ -141,13 +141,11 @@ public abstract class ServerMessenger {
             return;
         }
 
-        plugin.logDebug("Received " + message.getType() + " from " + message.getSender() + " targeted at " + target + " containing " + message.getData().size() + " objects");
-
         if (!servers.contains(message.getSender())) {
             servers.add(message.getSender());
         }
 
-        UUID playerId;
+        UUID playerId = null;
         long lastSeen;
         Player player;
         PlayerDataQuery query;
@@ -156,6 +154,7 @@ public abstract class ServerMessenger {
                 case GET_LAST_SEEN:
                     playerId = (UUID) message.read();
                     lastSeen = plugin.getLastSeen(playerId, true);
+                    plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target + ". Player was last seen " + lastSeen);
                     sendMessage(message.getSender(), MessageType.LAST_SEEN, playerId, lastSeen); // Send the last seen date to the server that requested it
                     break;
 
@@ -163,17 +162,22 @@ public abstract class ServerMessenger {
                     playerId = (UUID) message.read();
                     query = queries.get(playerId);
                     if (query != null) { // No query was started? Why are we getting this message?
+                        plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                         lastSeen = (long) message.read();
                         query.addResponse(message.getSender(), lastSeen);
 
                         if (isCompleted(query)) { // All known servers responded
+                            plugin.logDebug("All servers in " + target + " responded to " + message.getType() + " query for " + playerId + "!");
                             completeQuery(query);
                         }
+                    } else {
+                        plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target + " BUT WE DIDN'T START A QUERY?!?!");
                     }
                     break;
 
                 case GET_DATA:
                     playerId = (UUID) message.read();
+                    plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                     player = plugin.getServer().getPlayer(playerId);
                     if (player != null && player.isOnline()) { // Player is still online
                         if (!plugin.shouldSyncWithGroupOnLogout()) {
@@ -199,36 +203,47 @@ public abstract class ServerMessenger {
                     PlayerData data = (PlayerData) message.read();
                     query = queries.get(data.getPlayerId());
                     if (query != null || plugin.shouldSyncWithGroupOnLogout() && plugin.getLastSeen(data.getPlayerId(), true) < data.getTimeStamp()) {
+                        plugin.logDebug("Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + "." +
+                                " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLougut=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
                         plugin.applyData(data, () -> {
                             if (query != null) {
                                 query.stopTimeout();
                                 queries.remove(data.getPlayerId());
                             }
                         });
+                    } else {
+                        plugin.logDebug("Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + " but we decided to not apply it!"
+                                + " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLougut=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
                     }
                     break;
 
                 case MAP_CREATED:
                     if (plugin.shouldSyncMaps()) {
                         short mapId = (short) message.read();
+                        plugin.logDebug("Received " + message.getType() + " for " + mapId + " from " + message.getSender() + " targeted at " + target);
                         plugin.checkMap(mapId);
+                    } else {
+                        plugin.logDebug("Received " + message.getType() + " from " + message.getSender() + " targeted at " + target + " but this server wasn't configured to don't sync maps!");
                     }
                     break;
 
                 case IS_ONLINE:
                     // Do we want to do something if the player is online on the other server?
-                    // playerId = (UUID) message.read();
+                    playerId = (UUID) message.read();
+                    plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                     break;
 
                 case CANT_GET_DATA:
                     // Send the player to the server if we can't get the data and he has an open request
                     playerId = (UUID) message.read();
+                    plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                     if (hasQuery(playerId)) {
                         plugin.connectToServer(playerId, message.getSender());
                     }
                     break;
 
                 case HELLO:
+                    plugin.logDebug("Received " + message.getType() + " from " + message.getSender() + " targeted at " + target);
                     servers.add(message.getSender());
                     if (!getServerName().equalsIgnoreCase(target)) {
                         // Only answer if we were targeted as a group, not if he replied to a single server
@@ -237,14 +252,15 @@ public abstract class ServerMessenger {
                     break;
 
                 case BYE:
+                    plugin.logDebug("Received " + message.getType() + " from " + message.getSender() + " targeted at " + target);
                     servers.remove(message.getSender());
                     break;
 
                 default:
-                    plugin.getLogger().log(Level.WARNING, "Received an unsupported " + message.getType() + " request!");
+                    plugin.getLogger().log(Level.WARNING, "Received an unsupported " + message.getType() + " request from " + message.getSender() + " targeted at " + target + " containing " + message.getData().size() + " objects!");
             }
         } catch (ClassCastException | NullPointerException e) {
-            plugin.getLogger().log(Level.SEVERE, "Received an invalid " + message.getType() + " request!", e);
+            plugin.getLogger().log(Level.SEVERE, "Received an invalid " + message.getType() + " request from " + message.getSender() + " targeted at " + target + " containing " + message.getData().size() + " objects!", e);
         }
     }
 
