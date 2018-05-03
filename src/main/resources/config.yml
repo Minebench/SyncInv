@@ -27,6 +27,11 @@ server-name: server1 # CHANGE THIS!
 # to not always be online.
 sync-with-group-on-logout: true
 
+# Store player data even if the player never joined the server
+# This will create a player.dat when the data is synced and most likely
+# breaks first join detection of other plugins
+store-unknown-players: true
+
 # The amount of seconds we should maximally wait for all servers to
 # respond to a query
 query-timeout: 5

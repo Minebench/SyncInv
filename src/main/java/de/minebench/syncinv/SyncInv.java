@@ -24,7 +24,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -70,6 +72,11 @@ public final class SyncInv extends JavaPlugin {
      * Sync data with all servers in a group when a player logs out
      */
     private boolean syncWithGroupOnLogout;
+    
+    /**
+     * Store player data even if the player never joined the server
+     */
+    private boolean storeUnknownPlayers;
 
     /**
      * The amount of seconds we should wait for a query to stopTimeout
@@ -107,12 +114,15 @@ public final class SyncInv extends JavaPlugin {
 
     // Map syncing
     private Field fieldWorldMap;
-
+    
+    private File playerDataFolder;
+    
     @Override
     public void onEnable() {
         // Plugin startup logic
         loadConfig();
-
+        
+        playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         messenger = new RedisMessenger(this);
         messenger.hello();
 
@@ -155,6 +165,8 @@ public final class SyncInv extends JavaPlugin {
 
         syncWithGroupOnLogout = getConfig().getBoolean("sync-with-group-on-logout");
 
+        storeUnknownPlayers = getConfig().getBoolean("store-unknown-players");
+        
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
@@ -175,23 +187,14 @@ public final class SyncInv extends JavaPlugin {
     }
 
     /**
-     * Get a language message from the config
-     * @param key The key of the message (lang.<key>)
-     * @return The message string with colorcodes replaced
-     */
-    public String getLang(String key) {
-        return ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
-    }
-
-    /**
      * Get a language message from the config and replace variables in it
      * @param key The key of the message (lang.<key>)
      * @param replacements An array of variables to be replaced with certain strings in the format [var,repl,var,repl,...]
      * @return The message string with colorcodes and variables replaced
      */
     public String getLang(String key, String... replacements) {
-        String msg = getLang(key);
-        for (int i = 0; i + 1< replacements.length; i += 2) {
+        String msg = ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
+        for (int i = 0; i + 1 < replacements.length; i += 2) {
             msg = msg.replace("%" + replacements[i] + "%", replacements[i+1]);
         }
         return msg;
@@ -220,7 +223,6 @@ public final class SyncInv extends JavaPlugin {
                 return System.currentTimeMillis();
             }
         }
-        File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         File playerDat = new File(playerDataFolder, playerId + ".dat");
         return playerDat.lastModified();
     }
@@ -291,11 +293,13 @@ public final class SyncInv extends JavaPlugin {
 
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
+            boolean createdNewFile = false;
             if (getOpenInv() != null && player == null) {
                 OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
-                if (offlinePlayer.hasPlayedBefore()) {
-                    player = getOpenInv().loadPlayer(offlinePlayer);
+                if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
+                    createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
                 }
+                player = getOpenInv().loadPlayer(offlinePlayer);
             }
             if (player == null) {
                 logDebug("Could not apply data for player " + data.getPlayerId() + " as he isn't online and "
@@ -374,17 +378,41 @@ public final class SyncInv extends JavaPlugin {
                     player.updateInventory();
                 }
                 finished.run();
-            } catch (Exception e) {
-                getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
-            } finally {
                 if (getOpenInv() != null && !player.isOnline()) {
                     player.saveData();
+                }
+            } catch (Exception e) {
+                getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
+                if (createdNewFile) {
+                    new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
+                }
+            } finally {
+                if (getOpenInv() != null && !player.isOnline()) {
                     getOpenInv().releasePlayer(player, this);
                 }
             }
         });
     }
-
+    
+    private boolean createNewEmptyData(UUID playerId) {
+        File playerDat = new File(playerDataFolder, playerId + ".dat");
+        if (playerDat.exists()) {
+            return false;
+        }
+        File emptyFile = new File(getDataFolder(), "empty.dat");
+        if (!emptyFile.exists()) {
+            saveResource(emptyFile.getName(), false);
+        }
+        
+        try {
+            Files.copy(emptyFile.toPath(), playerDat.toPath());
+            return true;
+        } catch (IOException e) {
+            logDebug("Error while trying to create file for unknown player " + playerId + ": " + e.getMessage());
+        }
+        return false;
+    }
+    
     public PlayerData getData(Player player) {
         PlayerData data = new PlayerData(player);
 
