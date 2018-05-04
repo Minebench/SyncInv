@@ -35,6 +35,9 @@ public class PlayerQuitListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        if (plugin.getMessenger() == null) {
+            return;
+        }
         PlayerDataQuery query = plugin.getMessenger().removeQuery(event.getPlayer().getUniqueId());
         if (query != null) {
             // The player is gone although he had a query...

@@ -3,6 +3,7 @@ package de.minebench.syncinv;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
+import com.mojang.authlib.GameProfile;
 import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
@@ -13,6 +14,7 @@ import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import lombok.Getter;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -26,6 +28,8 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
@@ -111,6 +115,15 @@ public final class SyncInv extends JavaPlugin {
      */
     @Getter
     private short newestMap = 0;
+    
+    // Unknown player storing
+    private Method methodGetOfflinePlayer;
+    private Method methodGetHandle = null;
+    private Field fieldLocX = null;
+    private Field fieldLocY = null;
+    private Field fieldLocZ = null;
+    private Field fieldYaw = null;
+    private Field fieldPitch = null;
 
     // Map syncing
     private Field fieldWorldMap;
@@ -123,8 +136,20 @@ public final class SyncInv extends JavaPlugin {
         loadConfig();
         
         playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
-        messenger = new RedisMessenger(this);
-        messenger.hello();
+        try {
+            methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", GameProfile.class);
+        } catch (NoSuchMethodException e) {
+            if (storeUnknownPlayers) {
+                getLogger().log(Level.WARNING, "Could not load method required to store unknown players. Disabling it!", e);
+                storeUnknownPlayers = false;
+            }
+        }
+        try {
+            messenger = new RedisMessenger(this);
+            messenger.hello();
+        } catch (Exception e) {
+            messenger = null;
+        }
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
@@ -133,12 +158,12 @@ public final class SyncInv extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
 
-        if (shouldSyncMaps()) {
-            try {
-                fieldWorldMap = getServer().getMap((short) 0).getClass().getDeclaredField("worldMap");
-                fieldWorldMap.setAccessible(true);
-            } catch (NoSuchFieldException e) {
-                getLogger().log(Level.SEVERE, "Could not load field required for map syncing. Disabling it!", e);
+        try {
+            fieldWorldMap = getServer().getMap((short) 0).getClass().getDeclaredField("worldMap");
+            fieldWorldMap.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            if (shouldSyncMaps) {
+                getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
                 shouldSyncMaps = false;
             }
         }
@@ -206,7 +231,7 @@ public final class SyncInv extends JavaPlugin {
      * @return true if it is locked; false if not
      */
     public boolean isLocked(UUID playerId) {
-        return getMessenger().hasQuery(playerId);
+        return getMessenger() == null || getMessenger().hasQuery(playerId);
     }
 
     /**
@@ -297,9 +322,42 @@ public final class SyncInv extends JavaPlugin {
             if (getOpenInv() != null && player == null) {
                 OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
                 if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
+                    if (offlinePlayer.getName() == null) {
+                        try {
+                            offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), "SyncInv-Unknown"));
+                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            logDebug("Could not create offline player for " + data.getPlayerId() + "! " + e.getMessage());
+                        }
+                    }
                     createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
                 }
                 player = getOpenInv().loadPlayer(offlinePlayer);
+                if (createdNewFile) {
+                    try {
+                        if (methodGetHandle == null) {
+                            methodGetHandle = player.getClass().getMethod("getHandle");
+                        }
+                        Object entity = methodGetHandle.invoke(player);
+                        if (fieldLocX == null || fieldLocY == null || fieldLocZ == null || fieldYaw == null || fieldPitch == null) {
+                            fieldLocX = entity.getClass().getField("locX");
+                            fieldLocY = entity.getClass().getField("locY");
+                            fieldLocZ = entity.getClass().getField("locZ");
+                            fieldYaw = entity.getClass().getField("yaw");
+                            fieldPitch = entity.getClass().getField("pitch");
+                        }
+                        Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
+                        fieldLocX.set(entity, spawn.getX());
+                        fieldLocY.set(entity, spawn.getY());
+                        fieldLocZ.set(entity, spawn.getZ());
+                        fieldYaw.set(entity, spawn.getYaw());
+                        fieldPitch.set(entity, spawn.getPitch());
+                    } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
+                        getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
+                        storeUnknownPlayers = false;
+                        player = null;
+                        new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
+                    }
+                }
             }
             if (player == null) {
                 logDebug("Could not apply data for player " + data.getPlayerId() + " as he isn't online and "

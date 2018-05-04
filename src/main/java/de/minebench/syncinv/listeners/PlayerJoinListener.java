@@ -1,11 +1,11 @@
 package de.minebench.syncinv.listeners;
 
 import de.minebench.syncinv.SyncInv;
+import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 /*
  * Copyright 2017 Phoenix616 All rights reserved.
@@ -33,6 +33,11 @@ public class PlayerJoinListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerJoin(AsyncPlayerPreLoginEvent e) {
         if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+            if (plugin.getMessenger() == null) {
+                e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
+                e.setKickMessage(ChatColor.RED + plugin.getName() + " is not enabled! Please contact an administrator!");
+                return;
+            }
             plugin.getMessenger().queryData(e.getUniqueId());
         }
     }
