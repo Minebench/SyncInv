@@ -158,6 +158,9 @@ public final class SyncInv extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
 
+        if (getServer().getMap((short) 0) == null) {
+            getServer().createMap(getServer().getWorlds().get(0));
+        }
         try {
             fieldWorldMap = getServer().getMap((short) 0).getClass().getDeclaredField("worldMap");
             fieldWorldMap.setAccessible(true);
