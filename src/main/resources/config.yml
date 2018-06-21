@@ -22,6 +22,12 @@ server-group: survival
 # this has to be the same as the name in your BungeeCord's config.yml
 server-name: server1 # CHANGE THIS!
 
+# A list of server names that are required to answer to request
+# That way you can stop issues when a server isn't online that usually should be
+required-servers: []
+# - server2
+# - server3
+
 # Whether or not we should sync the data with all servers in a group
 # when a player logs out. Use this if your servers have the tendency
 # to not always be online.
@@ -39,6 +45,7 @@ query-timeout: 5
 # Whether or not we should load the data from queries that timed out
 # This might run into issues if the server with the most recent data
 # is not online at the moment of querying!
+# It will basically disable the required-servers function
 apply-timed-out-queries: false
 
 # Should the plugin try to keep maps in sync?

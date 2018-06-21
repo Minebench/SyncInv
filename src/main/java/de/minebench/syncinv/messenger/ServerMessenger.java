@@ -44,6 +44,11 @@ public abstract class ServerMessenger {
      */
     @Getter
     private String serverName;
+    
+    /**
+     * The servers that are required to be online to query data
+     */
+    private Set<String> requiredServers;
 
     /**
      * Store a set of all known servers
@@ -70,6 +75,7 @@ public abstract class ServerMessenger {
         this.plugin = plugin;
         serverGroup = plugin.getConfig().getString("server-group");
         serverName = plugin.getConfig().getString("server-name", plugin.getServer().getServerName());
+        requiredServers = new HashSet<>(plugin.getConfig().getStringList("required-servers"));
         registerChannel("*", "group:" + serverGroup, serverName);
     }
 
@@ -84,7 +90,7 @@ public abstract class ServerMessenger {
      * Be polite and say goodbye
      */
     public void goodbye() {
-        sendMessage("group:" + getServerGroup(), new Message(getServerName(), MessageType.BYE), true);
+        sendGroupMessage(new Message(getServerName(), MessageType.BYE), true);
         close();
     }
 
@@ -107,7 +113,12 @@ public abstract class ServerMessenger {
      */
     public PlayerDataQuery queryData(UUID playerId) {
         if (servers.isEmpty()) {
-            // We are all alone :'(
+            plugin.logDebug("Tried to query data for " + playerId + " but we are all alone :'(");
+            return null;
+        }
+        
+        if (!servers.containsAll(requiredServers)) {
+            plugin.logDebug("Tried to query data for " + playerId + " but not all required servers are here :'(");
             return null;
         }
 
@@ -140,10 +151,8 @@ public abstract class ServerMessenger {
             // This message is not for us
             return;
         }
-
-        if (!servers.contains(message.getSender())) {
-            servers.add(message.getSender());
-        }
+    
+        servers.add(message.getSender());
 
         UUID playerId = null;
         long lastSeen;
@@ -298,14 +307,13 @@ public abstract class ServerMessenger {
      * @return      Whether or not all servers responded
      */
     private boolean isCompleted(PlayerDataQuery query) {
-        if (query.getServers().size() != servers.size()) {
+        if (query.getServers().size() < servers.size()) {
             return false;
         }
-
-        for (String server : servers) {
-            if (!query.getServers().containsKey(server)) {
-                return false;
-            }
+        
+        if (!query.getServers().keySet().containsAll(servers)
+                || !query.getServers().keySet().containsAll(requiredServers)) {
+            return false;
         }
 
         query.complete();
