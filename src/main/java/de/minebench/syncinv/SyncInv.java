@@ -327,7 +327,7 @@ public final class SyncInv extends JavaPlugin {
                 if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
                     if (offlinePlayer.getName() == null) {
                         try {
-                            offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), "SyncInv-Unknown"));
+                            offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), data.getPlayerName()));
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             logDebug("Could not create offline player for " + data.getPlayerId() + "! " + e.getMessage());
                         }

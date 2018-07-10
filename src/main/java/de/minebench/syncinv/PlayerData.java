@@ -34,9 +34,10 @@ import java.util.UUID;
 @ToString
 @Getter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = 4782303812031183L;
+    private static final long serialVersionUID = 4783303812031153L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
+    private final String playerName;
     private final int totalExperience;
     private final int level;
     private final float exp;
@@ -60,6 +61,7 @@ public class PlayerData implements Serializable {
 
     PlayerData(Player player) {
         this.playerId = player.getUniqueId();
+        this.playerName = player.getName();
         this.totalExperience = player.getTotalExperience();
         this.level = player.getLevel();
         this.exp = player.getExp();

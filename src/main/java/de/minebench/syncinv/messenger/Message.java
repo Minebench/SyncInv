@@ -33,7 +33,7 @@ import java.util.Queue;
 @Getter
 @ToString
 public class Message {
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     private final String sender;
     private final MessageType type;
     private final Queue<Object> data = new ArrayDeque<>();
