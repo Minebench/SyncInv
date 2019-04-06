@@ -24,7 +24,7 @@ import java.util.UUID;
 @Data
 public class MapData implements Serializable {
     private static final long serialVersionUID = 74390249021942L;
-    private final short id;
+    private final int id;
     private final UUID worldId;
     private final int centerX;
     private final int centerZ;

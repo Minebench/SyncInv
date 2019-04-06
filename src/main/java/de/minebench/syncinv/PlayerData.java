@@ -5,14 +5,19 @@ import lombok.ToString;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.map.MapView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -84,17 +89,23 @@ public class PlayerData implements Serializable {
     }
 
     /**
-     * Get a list with the ids of all maps in an array of items
-     * @param items The items (e.g. from an inventory) to get the map ids from
-     * @return A list of map ids (shorts)
+     * Get a map with the IDS and MapViews of all maps in an array of items
+     * @param items The items (e.g. from an inventory) to get the maps
+     * @return A map of IDs to MapView
      */
-    public static List<Short> getMapIds(ItemStack[] items) {
-        List<Short> mapIds = new ArrayList<>();
+    public static Map<? extends Integer, ? extends MapView> getMapIds(ItemStack[] items) {
+        Map<Integer, MapView> maps = new HashMap<>();
         for (ItemStack item : items) {
             if (item != null && item.getType() == Material.MAP) {
-                mapIds.add(item.getDurability());
+                ItemMeta meta = item.getItemMeta();
+                if (meta instanceof MapMeta && ((MapMeta) meta).hasMapView()) {
+                    MapView view = ((MapMeta) meta).getMapView();
+                    if (view != null) {
+                        maps.put(view.getId(), view);
+                    }
+                }
             }
         }
-        return mapIds;
+        return maps;
     }
 }

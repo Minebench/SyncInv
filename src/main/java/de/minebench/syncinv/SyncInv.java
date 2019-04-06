@@ -31,7 +31,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -479,12 +481,11 @@ public final class SyncInv extends JavaPlugin {
 
         if (shouldSyncMaps()) {
             // Load maps that are in the inventory/enderchest
-            Set<Short> mapIdSet = new HashSet<>(); // Use set to only add each id once
-            mapIdSet.addAll(PlayerData.getMapIds(data.getInventory()));
-            mapIdSet.addAll(PlayerData.getMapIds(data.getEnderchest()));
+            Map<Integer, MapView> maps = new HashMap<>(); // Use set to only add each id once
+            maps.putAll(PlayerData.getMapIds(data.getInventory()));
+            maps.putAll(PlayerData.getMapIds(data.getEnderchest()));
             // Load the map data contents
-            for (Short mapId : mapIdSet) {
-                MapView map = player.getServer().getMap(mapId);
+            for (MapView map : maps.values()) {
                 try {
                     Object worldMap = fieldWorldMap.get(map);
                     Field colorField = worldMap.getClass().getField("colors");
@@ -492,12 +493,12 @@ public final class SyncInv extends JavaPlugin {
 
                     UUID worldId = getWorldId(map);
                     if (worldId == null) {
-                        getLogger().log(Level.SEVERE, "Could not get world id for map " + mapId + "!");
+                        getLogger().log(Level.SEVERE, "Could not get world id for map " + map.getId() + "!");
                         continue;
                     }
 
                     data.getMaps().add(new MapData(
-                            mapId,
+                            map.getId(),
                             worldId,
                             map.getCenterX(),
                             map.getCenterZ(),
@@ -505,9 +506,9 @@ public final class SyncInv extends JavaPlugin {
                             colors
                     ));
                 } catch (NoSuchFieldException e) {
-                    getLogger().log(Level.SEVERE, "Could not get field from map " + mapId + "! ", e);
+                    getLogger().log(Level.SEVERE, "Could not get field from map " + map.getId() + "! ", e);
                 } catch (IllegalAccessException e) {
-                    getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapId + "! ", e);
+                    getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
                 }
             }
         }
