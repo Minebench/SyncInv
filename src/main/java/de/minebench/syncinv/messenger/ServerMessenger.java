@@ -228,7 +228,7 @@ public abstract class ServerMessenger {
 
                 case MAP_CREATED:
                     if (plugin.shouldSyncMaps()) {
-                        short mapId = (short) message.read();
+                        int mapId = (int) message.read();
                         plugin.logDebug("Received " + message.getType() + " for " + mapId + " from " + message.getSender() + " targeted at " + target);
                         plugin.checkMap(mapId);
                     } else {

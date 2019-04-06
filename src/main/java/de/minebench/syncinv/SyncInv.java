@@ -114,7 +114,7 @@ public final class SyncInv extends JavaPlugin {
      * The id of the newest map that was seen on this server
      */
     @Getter
-    private short newestMap = 0;
+    private int newestMap = 0;
     
     // Unknown player storing
     private Method methodGetOfflinePlayer;
@@ -536,8 +536,9 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Make sure that we have maps with that id
+     * @param id
      */
-    public void checkMap(short id) {
+    public void checkMap(int id) {
         setNewestMap(id);
         logDebug("Checking map " + id);
         while (getServer().getMap(id) == null) {
@@ -596,7 +597,7 @@ public final class SyncInv extends JavaPlugin {
         }
     }
 
-    public void setNewestMap(short newestMap) {
+    public void setNewestMap(int newestMap) {
         if (getNewestMap() < newestMap) {
             getMessenger().sendGroupMessage(MessageType.MAP_CREATED, newestMap);
             this.newestMap = newestMap;
