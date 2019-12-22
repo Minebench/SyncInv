@@ -74,7 +74,7 @@ public abstract class ServerMessenger {
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
         serverGroup = plugin.getConfig().getString("server-group");
-        serverName = plugin.getConfig().getString("server-name", plugin.getServer().getServerName());
+        serverName = plugin.getConfig().getString("server-name", plugin.getServer().getIp() + ":" + plugin.getServer().getPort());
         requiredServers = new HashSet<>(plugin.getConfig().getStringList("required-servers"));
         registerChannel("*", "group:" + serverGroup, serverName);
     }
