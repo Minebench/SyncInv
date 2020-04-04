@@ -441,7 +441,7 @@ public final class SyncInv extends JavaPlugin {
                 player.setNoDamageTicks(data.getNoDamageTicks());
                 player.setVelocity(data.getVelocity());
                 if (player.isOnline()) {
-                    if (syncEffects) {
+                    if (shouldSyncEffects) {
                         player.addPotionEffects(data.getPotionEffects());
                     }
                     player.setHealthScaled(data.isHealthScaled());
