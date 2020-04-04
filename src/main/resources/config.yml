@@ -48,6 +48,9 @@ query-timeout: 5
 # It will basically disable the required-servers function
 apply-timed-out-queries: false
 
+# Should the plugin try to sync player effects?
+sync-effects: false
+
 # Should the plugin try to keep maps in sync?
 sync-maps: true
 

@@ -96,6 +96,11 @@ public final class SyncInv extends JavaPlugin {
     private boolean applyTimedOutQueries;
 
     /**
+     * Should the plugin try to sync player effects?
+     */
+    private boolean shouldSyncEffects;
+
+    /**
      * Should the plugin try to fix maps that were transferred over?
      */
     private boolean shouldSyncMaps;
@@ -199,6 +204,8 @@ public final class SyncInv extends JavaPlugin {
         
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
+
+        shouldSyncEffects = getConfig().getBoolean("sync-effects");
 
         shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
@@ -434,7 +441,9 @@ public final class SyncInv extends JavaPlugin {
                 player.setNoDamageTicks(data.getNoDamageTicks());
                 player.setVelocity(data.getVelocity());
                 if (player.isOnline()) {
-                    player.addPotionEffects(data.getPotionEffects());
+                    if (syncEffects) {
+                        player.addPotionEffects(data.getPotionEffects());
+                    }
                     player.setHealthScaled(data.isHealthScaled());
                     player.setHealthScale(data.getHealthScale());
                     player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
