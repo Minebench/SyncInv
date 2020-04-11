@@ -351,9 +351,12 @@ public final class SyncInv extends JavaPlugin {
                         }
                         Object entity = methodGetHandle.invoke(player);
                         if (fieldLocX == null || fieldLocY == null || fieldLocZ == null || fieldYaw == null || fieldPitch == null) {
-                            fieldLocX = entity.getClass().getField("locX");
-                            fieldLocY = entity.getClass().getField("locY");
-                            fieldLocZ = entity.getClass().getField("locZ");
+                            fieldLocX = entity.getClass().getDeclaredField("locX");
+                            fieldLocX.setAccessible(true);
+                            fieldLocY = entity.getClass().getDeclaredField("locY");
+                            fieldLocX.setAccessible(true);
+                            fieldLocZ = entity.getClass().getDeclaredField("locZ");
+                            fieldLocX.setAccessible(true);
                             fieldYaw = entity.getClass().getField("yaw");
                             fieldPitch = entity.getClass().getField("pitch");
                         }
