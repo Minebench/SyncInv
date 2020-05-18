@@ -1,5 +1,7 @@
 package de.minebench.syncinv;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
@@ -31,11 +33,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /*
@@ -73,6 +75,11 @@ public final class SyncInv extends JavaPlugin {
      */
     @Getter
     private ServerMessenger messenger;
+
+    /**
+     * The cache for player data which should only get applied when the player is online
+     */
+    private Cache<UUID, Map.Entry<PlayerData, Runnable>> playerDataCache;
 
     /**
      * Sync data with all servers in a group when a player logs out
@@ -151,6 +158,7 @@ public final class SyncInv extends JavaPlugin {
                 storeUnknownPlayers = false;
             }
         }
+        playerDataCache = CacheBuilder.newBuilder().expireAfterWrite(queryTimeout, TimeUnit.SECONDS).build();
         try {
             messenger = new RedisMessenger(this);
             messenger.hello();
@@ -331,6 +339,11 @@ public final class SyncInv extends JavaPlugin {
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
             boolean createdNewFile = false;
+            if ((player == null || !player.isOnline()) && getMessenger().hasQuery(data.getPlayerId())) {
+                cacheData(data, finished);
+                logDebug("Player " + data.getPlayerId() + " has query but was not fully online yet! Caching data...");
+                return;
+            }
             if (getOpenInv() != null && player == null) {
                 OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
                 if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
@@ -468,7 +481,20 @@ public final class SyncInv extends JavaPlugin {
             }
         });
     }
-    
+
+    private void cacheData(PlayerData data, Runnable finished) {
+        playerDataCache.put(data.getPlayerId(), new AbstractMap.SimpleEntry<>(data, finished));
+    }
+
+    /**
+     * Get data that was cached which should be applied on a player's login
+     * @param player    The player to get the data for
+     * @return A cache entry containing the PlayerData and the notification Runnable when applied successfully
+     */
+    public Map.Entry<PlayerData, Runnable> getCachedData(Player player) {
+        return playerDataCache.getIfPresent(player.getUniqueId());
+    }
+
     private boolean createNewEmptyData(UUID playerId) {
         File playerDat = new File(playerDataFolder, playerId + ".dat");
         if (playerDat.exists()) {

@@ -1,11 +1,16 @@
 package de.minebench.syncinv.listeners;
 
+import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+
+import java.util.Map;
 
 /*
  * Copyright 2017 Phoenix616 All rights reserved.
@@ -25,13 +30,13 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 
 public class PlayerJoinListener implements Listener {
     private final SyncInv plugin;
-	
+
     public PlayerJoinListener(SyncInv plugin) {
         this.plugin = plugin;
     }
-	
-	@EventHandler(priority = EventPriority.MONITOR)
-	public void onPlayerJoin(AsyncPlayerPreLoginEvent e) {
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerPreLogin(AsyncPlayerPreLoginEvent e) {
         if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED) {
             if (plugin.getMessenger() == null) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
@@ -39,6 +44,14 @@ public class PlayerJoinListener implements Listener {
                 return;
             }
             plugin.getMessenger().queryData(e.getUniqueId());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerJoined(PlayerJoinEvent e) {
+        Map.Entry<PlayerData, Runnable> cached = plugin.getCachedData(e.getPlayer());
+        if (cached != null) {
+            plugin.applyData(cached.getKey(), cached.getValue());
         }
     }
 }
