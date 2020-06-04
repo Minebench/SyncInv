@@ -21,19 +21,22 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class PlayerDataQuery {
     private final long timestamp = System.currentTimeMillis();
     private final UUID playerId;
     private final long localLastSeen;
+    private final Consumer<PlayerDataQuery> onComplete;
     private BukkitTask timeoutTask;
     private boolean completed = false;
 
     private Map<String, Long> servers = new ConcurrentHashMap<>();
 
-    public PlayerDataQuery(UUID playerId, long localLastSeen) {
+    public PlayerDataQuery(UUID playerId, long localLastSeen, Consumer<PlayerDataQuery> onComplete) {
         this.playerId = playerId;
         this.localLastSeen = localLastSeen;
+        this.onComplete = onComplete;
     }
 
     public UUID getPlayerId() {
@@ -104,5 +107,13 @@ public class PlayerDataQuery {
      */
     public boolean isCompleted() {
         return completed;
+    }
+
+    /**
+     * Get notified for when this query completes
+     * @return The consumer for when the query completes; gets this query objected passed for easier instance creation
+     */
+    public Consumer<PlayerDataQuery> getOnComplete() {
+        return onComplete;
     }
 }

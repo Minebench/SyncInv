@@ -61,4 +61,4 @@ lang:
   cant-drop-items: "&cDu kannst erst Items droppen wenn deine Spielerdaten geladen sind!"
   cant-move: "&cDu kannst dich erst bewegen wenn deine Spielerdaten geladen sind!"
   wait-for-loading: "&cBitte warte bis deine Spielerdaten geladen sind!"
-  cant-load-data: "&cTut uns leid aber der Server konnte nicht deine aktuellen Daten nicht laden.\nKontaktiere die Serverleitung wenn dies öfter passieren sollte!"
+  cant-load-data: "&cTut uns leid aber der Server konnte deine aktuellen Daten nicht laden.\nKontaktiere die Serverleitung wenn dies öfter passieren sollte!"

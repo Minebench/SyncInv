@@ -22,12 +22,14 @@ import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public abstract class ServerMessenger {
@@ -112,6 +114,40 @@ public abstract class ServerMessenger {
      * @return The new PlayerDataQuery object or null if one was already started
      */
     public PlayerDataQuery queryData(UUID playerId) {
+        return queryData(playerId, (query) -> {
+            if (!query.isCompleted() && !plugin.applyTimedOutQueries() && !isCompleted(query)) {
+                plugin.sendMessage(query.getPlayerId(), "cant-load-data");
+                plugin.kick(query.getPlayerId(), "cant-load-data");
+                return;
+            }
+
+            String youngestServer = query.getYoungestServer();
+            if (youngestServer == null) { // This is the youngest server
+                queries.remove(query.getPlayerId()); // Let the player play
+
+                // players will associate the level up sound from the exp giving with the successful load of the inventory
+                // --> play sound
+                plugin.playLoadSound(query.getPlayerId());
+            } else if (plugin.shouldQueryInventories()){
+                sendMessage(youngestServer, MessageType.GET_DATA, query.getPlayerId()); // Query the player's data
+                query.setTimeoutTask(plugin.runLater(() -> {
+                    plugin.sendMessage(query.getPlayerId(), "cant-load-data");
+                    plugin.kick(query.getPlayerId(), "cant-load-data");
+                    queries.remove(query.getPlayerId());
+                }, 20 * plugin.getQueryTimeout()));
+            } else {
+                plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
+            }
+        });
+    }
+
+    /**
+     * Query the data of a player
+     * @param playerId      The UUID of the player
+     * @param onComplete    Handle the player data when all we have all information from the other servers
+     * @return The new PlayerDataQuery object or null if one was already started
+     */
+    public PlayerDataQuery queryData(UUID playerId, Consumer<PlayerDataQuery> onComplete) {
         if (servers.isEmpty()) {
             plugin.logDebug("Tried to query data for " + playerId + " but we are all alone :'(");
             return null;
@@ -128,7 +164,7 @@ public abstract class ServerMessenger {
         }
 
         long lastSeen = plugin.getLastSeen(playerId, false);
-        PlayerDataQuery query = new PlayerDataQuery(playerId, lastSeen);
+        PlayerDataQuery query = new PlayerDataQuery(playerId, lastSeen, onComplete);
         query.setTimeoutTask(plugin.runLater(() -> completeQuery(query), 20 * plugin.getQueryTimeout()));
         queries.put(playerId, query);
 
@@ -170,7 +206,7 @@ public abstract class ServerMessenger {
                 case LAST_SEEN:
                     playerId = (UUID) message.read();
                     query = queries.get(playerId);
-                    if (query != null) { // No query was started? Why are we getting this message?
+                    if (query != null) {
                         plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                         lastSeen = (long) message.read();
                         query.addResponse(message.getSender(), lastSeen);
@@ -179,7 +215,7 @@ public abstract class ServerMessenger {
                             plugin.logDebug("All servers in " + target + " responded to " + message.getType() + " query for " + playerId + "!");
                             completeQuery(query);
                         }
-                    } else {
+                    } else { // No query was started? Why are we getting this message?
                         plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target + " BUT WE DIDN'T START A QUERY?!?!");
                     }
                     break;
@@ -275,30 +311,7 @@ public abstract class ServerMessenger {
 
     private void completeQuery(PlayerDataQuery query) {
         query.stopTimeout();
-
-        if (!query.isCompleted() && !plugin.applyTimedOutQueries() && !isCompleted(query)) {
-            plugin.sendMessage(query.getPlayerId(), "cant-load-data");
-            plugin.kick(query.getPlayerId(), "cant-load-data");
-            return;
-        }
-
-        String youngestServer = query.getYoungestServer();
-        if (youngestServer == null) { // This is the youngest server
-            queries.remove(query.getPlayerId()); // Let the player play
-
-            // players will associate the level up sound from the exp giving with the successful load of the inventory
-            // --> play sound
-            plugin.playLoadSound(query.getPlayerId());
-        } else if (plugin.shouldQueryInventories()){
-            sendMessage(youngestServer, MessageType.GET_DATA, query.getPlayerId()); // Query the player's data
-            query.setTimeoutTask(plugin.runLater(() -> {
-                plugin.sendMessage(query.getPlayerId(), "cant-load-data");
-                plugin.kick(query.getPlayerId(), "cant-load-data");
-                queries.remove(query.getPlayerId());
-            }, 20 * plugin.getQueryTimeout()));
-        } else {
-            plugin.connectToServer(query.getPlayerId(), youngestServer); // Connect him to the server
-        }
+        query.getOnComplete().accept(query);
     }
 
     /**
@@ -396,8 +409,7 @@ public abstract class ServerMessenger {
      * @param server The name of the server
      */
     private void queueDataRequest(UUID playerId, String server) {
-        queuedDataRequests.putIfAbsent(playerId, new LinkedHashSet<>());
-        queuedDataRequests.get(playerId).add(server);
+        queuedDataRequests.computeIfAbsent(playerId, uuid -> Collections.synchronizedSet(new LinkedHashSet<>())).add(server);
     }
 
     /**
