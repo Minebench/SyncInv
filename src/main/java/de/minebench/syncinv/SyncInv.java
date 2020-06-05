@@ -5,7 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
-import com.lishid.openinv.commands.OpenInvPluginCommand;
+import com.lishid.openinv.commands.OpenInvCommand;
 import com.mojang.authlib.GameProfile;
 import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
@@ -29,7 +29,6 @@ import org.bukkit.map.MapView;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -176,7 +175,7 @@ public final class SyncInv extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MapCreationListener(this), this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
-        OpenInvPluginCommand openInvCommand = new OpenInvPluginCommand(openInv);
+        OpenInvCommand openInvCommand = new OpenInvCommand(openInv);
         CommandExecutor forwarding = (sender, command, label, args) -> {
             if (sender instanceof Player && args.length > 0) {
                 if ("?".equalsIgnoreCase(args[0])) {
