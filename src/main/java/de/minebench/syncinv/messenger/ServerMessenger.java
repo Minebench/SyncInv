@@ -148,7 +148,7 @@ public abstract class ServerMessenger {
      * @return The new PlayerDataQuery object or null if one was already started
      */
     public PlayerDataQuery queryData(UUID playerId, Consumer<PlayerDataQuery> onComplete) {
-        if (servers.isEmpty()) {
+        if (isAlone()) {
             plugin.logDebug("Tried to query data for " + playerId + " but we are all alone :'(");
             return null;
         }
@@ -171,6 +171,14 @@ public abstract class ServerMessenger {
         sendGroupMessage(MessageType.GET_LAST_SEEN, playerId);
 
         return query;
+    }
+
+    /**
+     * Check whether or not we are alone
+     * @return Whether or not we are alone
+     */
+    public boolean isAlone() {
+        return servers.isEmpty();
     }
 
     /**
