@@ -39,7 +39,7 @@ import java.util.UUID;
 @ToString
 @Getter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = 4783303812031153L;
+    private static final long serialVersionUID = 4783303812031154L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
@@ -63,8 +63,9 @@ public class PlayerData implements Serializable {
     private final int noDamageTicks;
     private final Vector velocity;
     private final int heldItemSlot;
+    private final long lastSeen;
 
-    PlayerData(Player player) {
+    PlayerData(Player player, long lastSeen) {
         this.playerId = player.getUniqueId();
         this.playerName = player.getName();
         this.totalExperience = player.getTotalExperience();
@@ -86,6 +87,7 @@ public class PlayerData implements Serializable {
         this.noDamageTicks = player.getNoDamageTicks();
         this.velocity = player.getVelocity();
         this.heldItemSlot = player.getInventory().getHeldItemSlot();
+        this.lastSeen = lastSeen;
     }
 
     /**

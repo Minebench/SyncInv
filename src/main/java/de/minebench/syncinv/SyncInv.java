@@ -526,6 +526,7 @@ public final class SyncInv extends JavaPlugin {
                 if (getOpenInv() != null && !player.isOnline()) {
                     getOpenInv().releasePlayer(player, this);
                 }
+                setLastSeen(data.getPlayerId(), data.getLastSeen());
             }
         });
     }
@@ -563,7 +564,7 @@ public final class SyncInv extends JavaPlugin {
     }
     
     public PlayerData getData(Player player) {
-        PlayerData data = new PlayerData(player);
+        PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
         if (shouldSyncMaps()) {
             // Load maps that are in the inventory/enderchest
