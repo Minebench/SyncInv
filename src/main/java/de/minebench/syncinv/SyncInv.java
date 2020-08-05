@@ -225,8 +225,19 @@ public final class SyncInv extends JavaPlugin {
             getServer().createMap(getServer().getWorlds().get(0));
         }
         try {
-            fieldWorldMap = getServer().getMap((short) 0).getClass().getDeclaredField("worldMap");
-            fieldWorldMap.setAccessible(true);
+            MapView map = null;
+            for (short i = 0; i < Short.MAX_VALUE && map == null; i++) {
+                try {
+                    map = getServer().getMap(i);
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (map != null) {
+                fieldWorldMap = map.getClass().getDeclaredField("worldMap");
+                fieldWorldMap.setAccessible(true);
+            } else if (shouldSyncMaps) {
+                getLogger().log(Level.WARNING, "Could not get a map to laod the field required for map syncing. Disabling it!");
+                shouldSyncMaps = false;
+            }
         } catch (NoSuchFieldException e) {
             if (shouldSyncMaps) {
                 getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
