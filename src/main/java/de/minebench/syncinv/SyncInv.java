@@ -32,6 +32,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -134,11 +135,12 @@ public final class SyncInv extends JavaPlugin {
     private int newestMap = 0;
     
     // Unknown player storing
-    private Method methodGetOfflinePlayer;
+    private Constructor constructorVec3D = null;
+    private Constructor constructorBlockPosition = null;
+    private Method methodGetOfflinePlayer = null;
     private Method methodGetHandle = null;
-    private Field fieldLocX = null;
-    private Field fieldLocY = null;
-    private Field fieldLocZ = null;
+    private Field fieldLoc = null;
+    private Field fieldPosition = null;
     private Field fieldYaw = null;
     private Field fieldPitch = null;
 
@@ -422,23 +424,22 @@ public final class SyncInv extends JavaPlugin {
                             methodGetHandle = player.getClass().getMethod("getHandle");
                         }
                         Object entity = methodGetHandle.invoke(player);
-                        if (fieldLocX == null || fieldLocY == null || fieldLocZ == null || fieldYaw == null || fieldPitch == null) {
-                            fieldLocX = entity.getClass().getDeclaredField("locX");
-                            fieldLocX.setAccessible(true);
-                            fieldLocY = entity.getClass().getDeclaredField("locY");
-                            fieldLocX.setAccessible(true);
-                            fieldLocZ = entity.getClass().getDeclaredField("locZ");
-                            fieldLocX.setAccessible(true);
+                        if (fieldLoc == null || fieldPosition == null || constructorVec3D == null || constructorBlockPosition == null || fieldYaw == null || fieldPitch == null) {
+                            fieldLoc = entity.getClass().getDeclaredField("loc");
+                            fieldLoc.setAccessible(true);
+                            constructorVec3D = fieldLoc.getClass().getConstructor(double.class, double.class, double.class);
+                            fieldPosition = entity.getClass().getDeclaredField("locBlock");
+                            fieldPosition.setAccessible(true);
+                            constructorBlockPosition = fieldPosition.getClass().getConstructor(double.class, double.class, double.class);
                             fieldYaw = entity.getClass().getField("yaw");
                             fieldPitch = entity.getClass().getField("pitch");
                         }
                         Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
-                        fieldLocX.set(entity, spawn.getX());
-                        fieldLocY.set(entity, spawn.getY());
-                        fieldLocZ.set(entity, spawn.getZ());
+                        fieldLoc.set(entity, constructorVec3D.newInstance(spawn.getX(), spawn.getY(), spawn.getZ()));
+                        fieldPosition.set(entity, constructorBlockPosition.newInstance(spawn.getX(), spawn.getY(), spawn.getZ()));
                         fieldYaw.set(entity, spawn.getYaw());
                         fieldPitch.set(entity, spawn.getPitch());
-                    } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
+                    } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
                         getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
                         storeUnknownPlayers = false;
                         player = null;
