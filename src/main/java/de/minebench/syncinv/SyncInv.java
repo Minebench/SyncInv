@@ -72,7 +72,7 @@ public final class SyncInv extends JavaPlugin {
      * Reference to the OpenInv plugin to load data for the query option
      */
     @Getter
-    private OpenInv openInv;
+    private OpenInv openInv = null;
 
     /**
      * The messenger for communications between the servers
@@ -177,51 +177,53 @@ public final class SyncInv extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MapCreationListener(this), this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
-        OpenInvCommand openInvCommand = new OpenInvCommand(openInv);
-        CommandExecutor forwarding = (sender, command, label, args) -> {
-            if (sender instanceof Player && args.length > 0) {
-                if ("?".equalsIgnoreCase(args[0])) {
+        if (openInv != null) {
+            OpenInvCommand openInvCommand = new OpenInvCommand(openInv);
+            CommandExecutor forwarding = (sender, command, label, args) -> {
+                if (sender instanceof Player && args.length > 0) {
+                    if ("?".equalsIgnoreCase(args[0])) {
+                        return openInvCommand.onCommand(sender, command, label, args);
+                    }
+                    Player player = getServer().getPlayer(args[0]);
+                    if (player == null || !player.isOnline()) {
+                        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+                            OfflinePlayer offlinePlayer = openInv.matchPlayer(args[0]);
+                            if (offlinePlayer != null && (offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())) {
+                                PlayerDataQuery q = getMessenger().queryData(offlinePlayer.getUniqueId(), (query) -> {
+                                    getServer().getScheduler().runTask(this, () -> {
+                                        if (getServer().getPlayer(query.getPlayerId()) != null) {
+                                            openInvCommand.onCommand(sender, command, label, args);
+                                            return;
+                                        }
+                                        getMessenger().removeQuery(query.getPlayerId());
+                                        if (!((Player) sender).isOnline()) {
+                                            return;
+                                        }
+                                        if (query.getYoungestServer() == null) {
+                                            openInvCommand.onCommand(sender, command, label, args);
+                                        } else {
+                                            sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
+                                                    + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
+                                            connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
+                                        }
+                                    });
+                                });
+                                if (q == null) {
+                                    sender.sendMessage(ChatColor.RED + "Could not query information from other servers! Take a look at the log for more details.");
+                                }
+                            } else {
+                                sender.sendMessage(ChatColor.RED + "Player not found!");
+                            }
+                        });
+                        return true;
+                    }
                     return openInvCommand.onCommand(sender, command, label, args);
                 }
-                Player player = getServer().getPlayer(args[0]);
-                if (player == null || !player.isOnline()) {
-                    getServer().getScheduler().runTaskAsynchronously(this, () -> {
-                        OfflinePlayer offlinePlayer = openInv.matchPlayer(args[0]);
-                        if (offlinePlayer != null && (offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())) {
-                            PlayerDataQuery q = getMessenger().queryData(offlinePlayer.getUniqueId(), (query) -> {
-                                getServer().getScheduler().runTask(this, () -> {
-                                    if (getServer().getPlayer(query.getPlayerId()) != null) {
-                                        openInvCommand.onCommand(sender, command, label, args);
-                                        return;
-                                    }
-                                    getMessenger().removeQuery(query.getPlayerId());
-                                    if (!((Player) sender).isOnline()) {
-                                        return;
-                                    }
-                                    if (query.getYoungestServer() == null) {
-                                        openInvCommand.onCommand(sender, command, label, args);
-                                    } else {
-                                        sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
-                                                + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
-                                        connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
-                                    }
-                                });
-                            });
-                            if (q == null) {
-                                sender.sendMessage(ChatColor.RED + "Could not query information from other servers! Take a look at the log for more details.");
-                            }
-                        } else {
-                            sender.sendMessage(ChatColor.RED + "Player not found!");
-                        }
-                    });
-                    return true;
-                }
-                return openInvCommand.onCommand(sender, command, label, args);
-            }
-            return openInvCommand.onCommand(sender, command, label, new String[]{sender.getName()});
-        };
-        getCommand("openinv").setExecutor(forwarding);
-        getCommand("openender").setExecutor(forwarding);
+                return openInvCommand.onCommand(sender, command, label, new String[]{sender.getName()});
+            };
+            getCommand("openinv").setExecutor(forwarding);
+            getCommand("openender").setExecutor(forwarding);
+        }
 
         if (getServer().getMap((short) 0) == null) {
             getServer().createMap(getServer().getWorlds().get(0));
@@ -278,7 +280,9 @@ public final class SyncInv extends JavaPlugin {
 
         shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
-        openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
+        if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
+            openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
+        }
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
