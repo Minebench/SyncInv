@@ -16,20 +16,21 @@ package de.minebench.syncinv.messenger;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisURI;
-import com.lambdaworks.redis.api.StatefulRedisConnection;
-import com.lambdaworks.redis.codec.ByteArrayCodec;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.codec.StringCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubListener;
-import com.lambdaworks.redis.pubsub.StatefulRedisPubSubConnection;
-import com.lambdaworks.redis.pubsub.api.async.RedisPubSubAsyncCommands;
 import de.minebench.syncinv.SyncInv;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.codec.RedisCodec;
+import io.lettuce.core.codec.StringCodec;
+import io.lettuce.core.pubsub.RedisPubSubListener;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
+import io.lettuce.core.pubsub.api.async.RedisPubSubAsyncCommands;
 import org.bukkit.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.logging.Level;
 
 public class RedisMessenger extends ServerMessenger {
@@ -54,7 +55,7 @@ public class RedisMessenger extends ServerMessenger {
             uri.setPassword(plugin.getConfig().getString("redis.password"));
         }
         if (plugin.getConfig().isSet("redis.timeout")) {
-            uri.setTimeout(plugin.getConfig().getInt("redis.timeout"));
+            uri.setTimeout(Duration.ofSeconds(plugin.getConfig().getLong("redis.timeout")));
         }
         client = RedisClient.create(uri);
 

@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.12</version>
+            <version>1.18.12</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -58,49 +58,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>biz.paluch.redis</groupId>
-            <artifactId>lettuce</artifactId>
-            <version>4.3.0.Final</version>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>6.1.2.RELEASE</version>
             <scope>compile</scope>
-            <classifier>shaded</classifier>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.reactivex</groupId>
-                    <artifactId>rxjava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.latencyutils</groupId>
-                    <artifactId>LatencyUtils</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-common</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-codec</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-pool2</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
@@ -126,7 +87,7 @@
             </activation>
             <properties>
                 <buildNumber>${env.BUILD_NUMBER}</buildNumber>
-                <buildDescription>(build #${env.BUILD_NUMBER})</buildDescription>
+                <buildDescription>(build ${env.BUILD_NUMBER})</buildDescription>
             </properties>
         </profile>
     </profiles>
@@ -136,7 +97,7 @@
         <defaultGoal>clean package</defaultGoal>
         <plugins>
             <plugin>
-                <version>3.1</version>
+                <version>3.8.1</version>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -147,7 +108,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.3</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -158,8 +119,20 @@
                             <minimizeJar>true</minimizeJar>
                             <relocations>
                                 <relocation>
-                                    <pattern>com.lambdaworks</pattern>
+                                    <pattern>io.lettuce</pattern>
                                     <shadedPattern>de.minebench.syncinv.lib.lettuce</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>de.minebench.syncinv.lib.netty</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>reactor</pattern>
+                                    <shadedPattern>de.minebench.syncinv.lib.reactor</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.reactivestreams</pattern>
+                                    <shadedPattern>de.minebench.syncinv.lib.reactivestreams</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
