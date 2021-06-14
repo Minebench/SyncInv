@@ -39,7 +39,7 @@ import java.util.UUID;
 @ToString
 @Getter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = 4783303812031154L;
+    private static final long serialVersionUID = -1100374391372034848L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
@@ -55,6 +55,7 @@ public class PlayerData implements Serializable {
     private final boolean isHealthScaled;
     private final double healthScale;
     private final int foodLevel;
+    private final float saturation;
     private final float exhaustion;
     private final int maxAir;
     private final int remainingAir;
@@ -79,6 +80,7 @@ public class PlayerData implements Serializable {
         this.isHealthScaled = player.isHealthScaled();
         this.healthScale = player.getHealthScale();
         this.foodLevel = player.getFoodLevel();
+        this.saturation = player.getSaturation();
         this.exhaustion = player.getExhaustion();
         this.maxAir = player.getMaximumAir();
         this.remainingAir = player.getRemainingAir();

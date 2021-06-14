@@ -513,6 +513,7 @@ public final class SyncInv extends JavaPlugin {
                 player.setMaxHealth(data.getMaxHealth());
                 player.setHealth(data.getHealth());
                 player.setFoodLevel(data.getFoodLevel());
+                player.setSaturation(data.getSaturation());
                 player.setExhaustion(data.getExhaustion());
                 player.setMaximumAir(data.getMaxAir());
                 player.setRemainingAir(data.getRemainingAir());
@@ -539,8 +540,9 @@ public final class SyncInv extends JavaPlugin {
                     new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
                 }
             } finally {
-                if (getOpenInv() != null && !player.isOnline()) {
+                if (getOpenInv() != null) {
                     getOpenInv().releasePlayer(player, this);
+                    getOpenInv().unload(player);
                 }
                 setLastSeen(data.getPlayerId(), data.getLastSeen());
             }
