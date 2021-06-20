@@ -448,6 +448,7 @@ public final class SyncInv extends JavaPlugin {
                         storeUnknownPlayers = false;
                         player = null;
                         new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
+                        getOpenInv().unload(offlinePlayer);
                     }
                 }
             }
