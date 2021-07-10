@@ -18,9 +18,12 @@ import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import lombok.Getter;
 import org.bukkit.ChatColor;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -38,7 +41,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.AbstractMap;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -115,6 +120,11 @@ public final class SyncInv extends JavaPlugin {
      * Should the plugin try to sync persistent nbt data on the player object?
      */
     private boolean shouldSyncPersistentData;
+
+    /**
+     * Should the plugin try to sync player advancement progress?
+     */
+    private boolean shouldSyncAdvancements;
 
     /**
      * Should the plugin try to fix maps that were transferred over?
@@ -285,6 +295,8 @@ public final class SyncInv extends JavaPlugin {
         shouldSyncEffects = getConfig().getBoolean("sync-effects");
 
         shouldSyncPersistentData = getConfig().getBoolean("sync-persistent-data");
+
+        shouldSyncAdvancements = getConfig().getBoolean("sync-advancements");
 
         shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
@@ -541,6 +553,36 @@ public final class SyncInv extends JavaPlugin {
                         shouldSyncPersistentData = false;
                     }
                 }
+                if (shouldSyncAdvancements) {
+                    Boolean oldGamerule = player.getWorld().getGameRuleValue(GameRule.ANNOUNCE_ADVANCEMENTS);
+                    if ((oldGamerule != null && oldGamerule) || (oldGamerule == null && player.getWorld().getGameRuleDefault(GameRule.ANNOUNCE_ADVANCEMENTS))) {
+                        player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                    }
+                    for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
+                        Advancement advancement = it.next();
+                        Map<String, Long> awarded = data.getAdvancementProgress().get(advancement.getKey().toString());
+                        if (awarded != null) {
+                            AdvancementProgress progress = player.getAdvancementProgress(advancement);
+                            for (String criterion : progress.getAwardedCriteria()) {
+                                if (!awarded.containsKey(criterion)) {
+                                    progress.revokeCriteria(criterion);
+                                }
+                            }
+                            for (Map.Entry<String, Long> entry : awarded.entrySet()) {
+                                Date date = progress.getDateAwarded(entry.getKey());
+                                if (date == null && progress.awardCriteria(entry.getKey())) {
+                                    date = progress.getDateAwarded(entry.getKey());
+                                }
+                                if (date != null && date.getTime() != entry.getValue()) {
+                                    date.setTime(entry.getValue());
+                                }
+                            }
+                        }
+                    }
+                    if (oldGamerule == null || oldGamerule) {
+                        player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
+                    }
+                }
                 if (player.isOnline()) {
                     if (shouldSyncEffects) {
                         player.addPotionEffects(data.getPotionEffects());
@@ -614,6 +656,21 @@ public final class SyncInv extends JavaPlugin {
             } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data. Disabling persistent data syncing!", e);
                 shouldSyncPersistentData = false;
+            }
+        }
+
+        if (shouldSyncAdvancements) {
+            for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
+                Advancement advancement = it.next();
+                AdvancementProgress progress = player.getAdvancementProgress(advancement);
+                Map<String, Long> awarded = new HashMap<>();
+                for (String criterion : progress.getAwardedCriteria()) {
+                    Date date = progress.getDateAwarded(criterion);
+                    if (date != null) {
+                        awarded.put(criterion, date.getTime());
+                    }
+                }
+                data.getAdvancementProgress().put(advancement.getKey().toString(), awarded);
             }
         }
 

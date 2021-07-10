@@ -54,6 +54,9 @@ sync-effects: false
 # Should the plugin try to sync persistent nbt data on the player object?
 sync-persistent-data: true
 
+# Should the plugin try to sync player advancement progress?
+sync-advancements: true
+
 # Should the plugin try to keep maps in sync?
 sync-maps: true
 
