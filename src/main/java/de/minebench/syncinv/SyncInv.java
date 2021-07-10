@@ -606,8 +606,8 @@ public final class SyncInv extends JavaPlugin {
                     }
                     if (shouldSync(SyncType.INVENTORY)) {
                         player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+                        player.updateInventory();
                     }
-                    player.updateInventory();
                 }
                 finished.run();
                 if (getOpenInv() != null && !player.isOnline()) {
