@@ -20,13 +20,16 @@ import lombok.Getter;
 import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.Statistic;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapView;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -254,11 +257,25 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Check if the plugin should sync a certain type
-     * @param syncType The type to sync
+     * @param syncType The type to check
      * @return Whether or not it should be synced
      */
     public boolean shouldSync(SyncType syncType) {
         return enabledSyncTypes.contains(syncType);
+    }
+
+    /**
+     * Check if the plugin should sync any of the provided types
+     * @param syncTypes The types to check
+     * @return Whether or not it should be synced
+     */
+    public boolean shouldSync(SyncType... syncTypes) {
+        for (SyncType syncType : syncTypes) {
+            if (shouldSync(syncType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean disableSync(SyncType syncType) {
@@ -596,6 +613,54 @@ public final class SyncInv extends JavaPlugin {
                         player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
                     }
                 }
+                if (shouldSync(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
+                    for (Statistic statistic : Statistic.values()) {
+                        switch (statistic.getType()) {
+                            case UNTYPED:
+                                if (shouldSync(SyncType.GENERAL_STATISTICS)) {
+                                    Integer value = data.getStatistics().get(statistic, "");
+                                    if (value != null && value >= 0) {
+                                        player.setStatistic(statistic, value);
+                                    }
+                                }
+                                break;
+                            case ENTITY:
+                                if (shouldSync(SyncType.ENTITY_STATISTICS)) {
+                                    for (EntityType entityType : EntityType.values()) {
+                                        Integer value = data.getStatistics().get(statistic, entityType.name());
+                                        if (value != null && value > 0) {
+                                            player.setStatistic(statistic, entityType, value);
+                                        }
+                                    }
+                                }
+                                break;
+                            case BLOCK:
+                                if (shouldSync(SyncType.BLOCK_STATISTICS)) {
+                                    for (Material blockType : Material.values()) {
+                                        if (blockType.isBlock()) {
+                                            int value = data.getStatistics().get(statistic, blockType.name());
+                                            if (value > 0) {
+                                                player.setStatistic(statistic, blockType, value);
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            case ITEM:
+                                if (shouldSync(SyncType.ITEM_STATISTICS)) {
+                                    for (Material itemType : Material.values()) {
+                                        if (itemType.isItem()) {
+                                            int value = data.getStatistics().get(statistic, itemType.name());
+                                            if (value > 0) {
+                                                player.setStatistic(statistic, itemType, value);
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
                 if (player.isOnline()) {
                     if (shouldSync(SyncType.EFFECTS)) {
                         player.addPotionEffects(data.getPotionEffects());
@@ -688,6 +753,55 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
                 data.getAdvancementProgress().put(advancement.getKey().toString(), awarded);
+            }
+        }
+
+        if (shouldSync(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
+            for (Statistic statistic : Statistic.values()) {
+                switch (statistic.getType()) {
+                    case UNTYPED:
+                        if (shouldSync(SyncType.GENERAL_STATISTICS)) {
+                            int value = player.getStatistic(statistic);
+                            if (value > 0) {
+                                data.getStatistics().put(statistic, "", value);
+                            }
+                        }
+                        break;
+                    case ENTITY:
+                        if (shouldSync(SyncType.ENTITY_STATISTICS)) {
+                            for (EntityType entityType : EntityType.values()) {
+                                int value = player.getStatistic(statistic, entityType);
+                                if (value > 0) {
+                                    data.getStatistics().put(statistic, entityType.name(), value);
+                                }
+                            }
+                        }
+                        break;
+                    case BLOCK:
+                        if (shouldSync(SyncType.BLOCK_STATISTICS)) {
+                            for (Material blockType : Material.values()) {
+                                if (blockType.isBlock()) {
+                                    int value = player.getStatistic(statistic, blockType);
+                                    if (value > 0) {
+                                        data.getStatistics().put(statistic, blockType.name(), value);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case ITEM:
+                        if (shouldSync(SyncType.ITEM_STATISTICS)) {
+                            for (Material itemType : Material.values()) {
+                                if (itemType.isItem()) {
+                                    int value = player.getStatistic(statistic, itemType);
+                                    if (value > 0) {
+                                        data.getStatistics().put(statistic, itemType.name(), value);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
             }
         }
 

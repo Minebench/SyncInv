@@ -80,6 +80,14 @@ sync:
   persistent-data: true
   # Should the plugin sync player advancement progress?
   advancements: true
+  # Should the plugin sync general player statistics?
+  general-statistics: true
+  # Should the plugin sync entity player statistics?
+  entity-statistics: false
+  # Should the plugin sync item player statistics?
+  item-statistics: false
+  # Should the plugin sync block player statistics?
+  block-statistics: false
   # Should the plugin try to keep maps in sync?
   maps: true
 

@@ -34,7 +34,11 @@ public enum SyncType {
     EFFECTS,
     MAPS,
     PERSISTENT_DATA,
-    ADVANCEMENTS;
+    ADVANCEMENTS,
+    GENERAL_STATISTICS,
+    ENTITY_STATISTICS,
+    ITEM_STATISTICS,
+    BLOCK_STATISTICS;
 
     public String getKey() {
         return name().toLowerCase(Locale.ROOT).replace('_', '-');

@@ -1,10 +1,13 @@
 package de.minebench.syncinv;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -40,7 +43,7 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = -1100374391372034851L;
+    private static final long serialVersionUID = -1100374391372034852L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
@@ -68,6 +71,7 @@ public class PlayerData implements Serializable {
     private final int heldItemSlot;
     private Map<String, ?> persistentData = null;
     private final Map<String, Map<String, Long>> advancementProgress = new HashMap<>();
+    private final Table<Statistic, String, Integer> statistics = HashBasedTable.create();
     private final long lastSeen;
 
     PlayerData(Player player, long lastSeen) {
