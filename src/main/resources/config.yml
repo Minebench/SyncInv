@@ -48,17 +48,40 @@ query-timeout: 5
 # It will basically disable the required-servers function
 apply-timed-out-queries: false
 
-# Should the plugin try to sync player effects?
-sync-effects: false
-
-# Should the plugin try to sync persistent nbt data on the player object?
-sync-persistent-data: true
-
-# Should the plugin try to sync player advancement progress?
-sync-advancements: true
-
-# Should the plugin try to keep maps in sync?
-sync-maps: true
+# What to sync
+sync:
+  # Should the plugin sync player inventory items?
+  inventory: true
+  # Should the plugin sync player enderchest items?
+  enderchest: true
+  # Should the plugin try sync the player gamemode? (Only works when the player is actually online, not for offline storage)
+  gamemode: false
+  # Should the plugin sync the player experience?
+  experience: true
+  # Should the plugin sync the player's health, max health and health scaling?
+  health: true
+  # Should the plugin to sync the player's food level?
+  hunger: true
+  # Should the plugin to sync the player's saturation?
+  saturation: true
+  # Should the plugin to sync the player's exhaustion?
+  exhaustion: true
+  # Should the plugin to sync the player's air level?
+  air: true
+  # Should the plugin sync the player's on fire state and fire duration?
+  fire: true
+  # Should the plugin to sync the player's no-damage-ticks?
+  no-damage-ticks: true
+  # Should the plugin to sync the player's current velocity?
+  velocity: true
+  # Should the plugin try to sync player effects? (Only works when the player is actually online, not for offline storage)
+  effects: false
+  # Should the plugin try to sync persistent nbt data on the player object?
+  persistent-data: true
+  # Should the plugin sync player advancement progress?
+  advancements: true
+  # Should the plugin try to keep maps in sync?
+  maps: true
 
 # Language settings
 lang:

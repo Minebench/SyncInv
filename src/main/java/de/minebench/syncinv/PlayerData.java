@@ -3,6 +3,7 @@ package de.minebench.syncinv;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -39,10 +40,11 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = -1100374391372034850L;
+    private static final long serialVersionUID = -1100374391372034851L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
+    private final GameMode gamemode;
     private final int totalExperience;
     private final int level;
     private final float exp;
@@ -71,6 +73,7 @@ public class PlayerData implements Serializable {
     PlayerData(Player player, long lastSeen) {
         this.playerId = player.getUniqueId();
         this.playerName = player.getName();
+        this.gamemode = player.getGameMode();
         this.totalExperience = player.getTotalExperience();
         this.level = player.getLevel();
         this.exp = player.getExp();

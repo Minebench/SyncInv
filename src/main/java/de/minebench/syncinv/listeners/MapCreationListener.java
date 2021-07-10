@@ -17,6 +17,7 @@ package de.minebench.syncinv.listeners;
  */
 
 import de.minebench.syncinv.SyncInv;
+import de.minebench.syncinv.SyncType;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -39,7 +40,7 @@ public class MapCreationListener implements Listener {
 
     @EventHandler
     public void onMapCreation(MapInitializeEvent event) {
-        if (plugin.shouldSyncMaps()) {
+        if (plugin.shouldSync(SyncType.MAPS)) {
             plugin.setNewestMap(event.getMap().getId());
         }
     }

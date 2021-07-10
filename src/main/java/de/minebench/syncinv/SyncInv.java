@@ -42,6 +42,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.AbstractMap;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -112,24 +113,9 @@ public final class SyncInv extends JavaPlugin {
     private boolean applyTimedOutQueries;
 
     /**
-     * Should the plugin try to sync player effects?
+     * What to sync
      */
-    private boolean shouldSyncEffects;
-
-    /**
-     * Should the plugin try to sync persistent nbt data on the player object?
-     */
-    private boolean shouldSyncPersistentData;
-
-    /**
-     * Should the plugin try to sync player advancement progress?
-     */
-    private boolean shouldSyncAdvancements;
-
-    /**
-     * Should the plugin try to fix maps that were transferred over?
-     */
-    private boolean shouldSyncMaps;
+    private EnumSet<SyncType> enabledSyncTypes;
 
     /**
      * Whether or not the plugin is currently disabling
@@ -254,16 +240,29 @@ public final class SyncInv extends JavaPlugin {
             if (map != null) {
                 fieldWorldMap = map.getClass().getDeclaredField("worldMap");
                 fieldWorldMap.setAccessible(true);
-            } else if (shouldSyncMaps) {
+            } else if (shouldSync(SyncType.MAPS)) {
                 getLogger().log(Level.WARNING, "Could not get a map to laod the field required for map syncing. Disabling it!");
-                shouldSyncMaps = false;
+                disableSync(SyncType.MAPS);
             }
         } catch (NoSuchFieldException e) {
-            if (shouldSyncMaps) {
+            if (shouldSync(SyncType.MAPS)) {
                 getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
-                shouldSyncMaps = false;
+                disableSync(SyncType.MAPS);
             }
         }
+    }
+
+    /**
+     * Check if the plugin should sync a certain type
+     * @param syncType The type to sync
+     * @return Whether or not it should be synced
+     */
+    public boolean shouldSync(SyncType syncType) {
+        return enabledSyncTypes.contains(syncType);
+    }
+
+    private boolean disableSync(SyncType syncType) {
+        return enabledSyncTypes.remove(syncType);
     }
 
     @Override
@@ -292,13 +291,12 @@ public final class SyncInv extends JavaPlugin {
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
-        shouldSyncEffects = getConfig().getBoolean("sync-effects");
-
-        shouldSyncPersistentData = getConfig().getBoolean("sync-persistent-data");
-
-        shouldSyncAdvancements = getConfig().getBoolean("sync-advancements");
-
-        shouldSyncMaps = getConfig().getBoolean("sync-maps");
+        enabledSyncTypes = EnumSet.noneOf(SyncType.class);
+        for (SyncType syncType : SyncType.values()) {
+            if (getConfig().getBoolean("sync." + syncType.getKey(), getConfig().getBoolean("sync-" + syncType.getKey()))) {
+                enabledSyncTypes.add(syncType);
+            }
+        }
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
@@ -368,13 +366,6 @@ public final class SyncInv extends JavaPlugin {
         File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         File playerDat = new File(playerDataFolder, playerId + ".dat");
         return playerDat.setLastModified(timeStamp);
-    }
-
-    /**
-     * Should the plugin try to keep maps in sync?
-     */
-    public boolean shouldSyncMaps() {
-        return shouldSyncMaps;
     }
 
     /**
@@ -475,23 +466,30 @@ public final class SyncInv extends JavaPlugin {
                 getOpenInv().retainPlayer(player, this);
             }
             try {
-                player.setTotalExperience(0);
-                player.setLevel(0);
-                player.setExp(0);
-                player.getInventory().clear();
-                player.getEnderChest().clear();
-                if (player.isOnline()) {
+                if (shouldSync(SyncType.EXPERIENCE)) {
+                    player.setTotalExperience(0);
+                    player.setLevel(0);
+                    player.setExp(0);
+                }
+                if (shouldSync(SyncType.INVENTORY))
+                    player.getInventory().clear();
+                if (shouldSync(SyncType.ENDERCHEST))
+                    player.getEnderChest().clear();
+                if (player.isOnline() && shouldSync(SyncType.EFFECTS)) {
                     for (PotionEffect effect : player.getActivePotionEffects()) {
                         player.removePotionEffect(effect.getType());
                     }
                 }
-                player.resetMaxHealth();
+                if (shouldSync(SyncType.HEALTH))
+                    player.resetMaxHealth();
 
-                player.setTotalExperience(data.getTotalExperience());
-                player.setLevel(data.getLevel());
-                player.setExp(data.getExp());
+                if (shouldSync(SyncType.EXPERIENCE)) {
+                    player.setTotalExperience(data.getTotalExperience());
+                    player.setLevel(data.getLevel());
+                    player.setExp(data.getExp());
+                }
                 // Try to fix the maps if we should do it
-                if (shouldSyncMaps) {
+                if (shouldSync(SyncType.MAPS)) {
                     for (MapData mapData : data.getMaps()) {
                         logDebug("Found map " + mapData.getId() + " in inventory");
                         checkMap(mapData.getId());
@@ -523,20 +521,35 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
 
-                player.getInventory().setContents(data.getInventoryContents());
-                player.getEnderChest().setContents(data.getEnderchestContents());
-                player.setMaxHealth(data.getMaxHealth());
-                player.setHealth(data.getHealth());
-                player.setFoodLevel(data.getFoodLevel());
-                player.setSaturation(data.getSaturation());
-                player.setExhaustion(data.getExhaustion());
-                player.setMaximumAir(data.getMaxAir());
-                player.setRemainingAir(data.getRemainingAir());
-                player.setFireTicks(data.getFireTicks());
-                player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
-                player.setNoDamageTicks(data.getNoDamageTicks());
-                player.setVelocity(data.getVelocity());
-                if (shouldSyncPersistentData && data.getPersistentData() != null) {
+                if (shouldSync(SyncType.INVENTORY))
+                    player.getInventory().setContents(data.getInventoryContents());
+                if (shouldSync(SyncType.ENDERCHEST))
+                    player.getEnderChest().setContents(data.getEnderchestContents());
+                if (shouldSync(SyncType.GAMEMODE))
+                    player.setGameMode(data.getGamemode());
+                if (shouldSync(SyncType.HEALTH)) {
+                    player.setMaxHealth(data.getMaxHealth());
+                    player.setHealth(data.getHealth());
+                }
+                if (shouldSync(SyncType.HUNGER))
+                    player.setFoodLevel(data.getFoodLevel());
+                if (shouldSync(SyncType.SATURATION))
+                    player.setSaturation(data.getSaturation());
+                if (shouldSync(SyncType.EXHAUSTION))
+                    player.setExhaustion(data.getExhaustion());
+                if (shouldSync(SyncType.AIR)) {
+                    player.setMaximumAir(data.getMaxAir());
+                    player.setRemainingAir(data.getRemainingAir());
+                }
+                if (shouldSync(SyncType.FIRE))
+                    player.setFireTicks(data.getFireTicks());
+                if (shouldSync(SyncType.NO_DAMAGE_TICKS)) {
+                    player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
+                    player.setNoDamageTicks(data.getNoDamageTicks());
+                }
+                if (shouldSync(SyncType.VELOCITY))
+                    player.setVelocity(data.getVelocity());
+                if (shouldSync(SyncType.PERSISTENT_DATA) && data.getPersistentData() != null) {
                     try {
                         PersistentDataContainer pdc = player.getPersistentDataContainer();
                         if (methodGetRaw == null) {
@@ -550,10 +563,10 @@ public final class SyncInv extends JavaPlugin {
                         methodPutAll.invoke(pdc, data.getPersistentData());
                     } catch (ClassCastException | NoSuchMethodError e) {
                         getLogger().log(Level.WARNING, "Error while trying to write PersistentDataContainer data. Disabling persistent data syncing!", e);
-                        shouldSyncPersistentData = false;
+                        disableSync(SyncType.PERSISTENT_DATA);
                     }
                 }
-                if (shouldSyncAdvancements) {
+                if (shouldSync(SyncType.ADVANCEMENTS)) {
                     Boolean oldGamerule = player.getWorld().getGameRuleValue(GameRule.ANNOUNCE_ADVANCEMENTS);
                     if ((oldGamerule != null && oldGamerule) || (oldGamerule == null && player.getWorld().getGameRuleDefault(GameRule.ANNOUNCE_ADVANCEMENTS))) {
                         player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
@@ -584,12 +597,16 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
                 if (player.isOnline()) {
-                    if (shouldSyncEffects) {
+                    if (shouldSync(SyncType.EFFECTS)) {
                         player.addPotionEffects(data.getPotionEffects());
                     }
-                    player.setHealthScaled(data.isHealthScaled());
-                    player.setHealthScale(data.getHealthScale());
-                    player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+                    if (shouldSync(SyncType.HEALTH)) {
+                        player.setHealthScaled(data.isHealthScaled());
+                        player.setHealthScale(data.getHealthScale());
+                    }
+                    if (shouldSync(SyncType.INVENTORY)) {
+                        player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
+                    }
                     player.updateInventory();
                 }
                 finished.run();
@@ -646,7 +663,7 @@ public final class SyncInv extends JavaPlugin {
     public PlayerData getData(Player player) {
         PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
-        if (shouldSyncPersistentData) {
+        if (shouldSync(SyncType.PERSISTENT_DATA)) {
             try {
                 PersistentDataContainer pdc = player.getPersistentDataContainer();
                 if (methodGetRaw == null) {
@@ -655,11 +672,11 @@ public final class SyncInv extends JavaPlugin {
                 data.setPersistentData((Map<String, ?>) methodGetRaw.invoke(pdc));
             } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data. Disabling persistent data syncing!", e);
-                shouldSyncPersistentData = false;
+                disableSync(SyncType.PERSISTENT_DATA);
             }
         }
 
-        if (shouldSyncAdvancements) {
+        if (shouldSync(SyncType.ADVANCEMENTS)) {
             for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
                 Advancement advancement = it.next();
                 AdvancementProgress progress = player.getAdvancementProgress(advancement);
@@ -674,7 +691,7 @@ public final class SyncInv extends JavaPlugin {
             }
         }
 
-        if (shouldSyncMaps()) {
+        if (shouldSync(SyncType.MAPS)) {
             // Load maps that are in the inventory/enderchest
             Map<Integer, MapView> maps = new HashMap<>(); // Use set to only add each id once
             maps.putAll(PlayerData.getMapIds(player.getInventory().getContents()));

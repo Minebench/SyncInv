@@ -18,6 +18,7 @@ package de.minebench.syncinv.messenger;
 
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
+import de.minebench.syncinv.SyncType;
 import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -271,7 +272,7 @@ public abstract class ServerMessenger {
                     break;
 
                 case MAP_CREATED:
-                    if (plugin.shouldSyncMaps()) {
+                    if (plugin.shouldSync(SyncType.MAPS)) {
                         int mapId = (int) message.read();
                         plugin.logDebug("Received " + message.getType() + " for " + mapId + " from " + message.getSender() + " targeted at " + target);
                         plugin.checkMap(mapId);
