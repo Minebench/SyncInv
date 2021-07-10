@@ -1,6 +1,7 @@
 package de.minebench.syncinv;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,11 +13,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -38,16 +37,17 @@ import java.util.UUID;
  */
 @ToString
 @Getter
+@Setter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = -1100374391372034848L;
+    private static final long serialVersionUID = -1100374391372034849L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
     private final int totalExperience;
     private final int level;
     private final float exp;
-    private final ItemStack[] inventory;
-    private final ItemStack[] enderchest;
+    private final byte[][] inventory;
+    private final byte[][] enderchest;
     private final Collection<PotionEffect> potionEffects;
     private final Set<MapData> maps = new HashSet<>();
     private final double maxHealth;
@@ -64,6 +64,7 @@ public class PlayerData implements Serializable {
     private final int noDamageTicks;
     private final Vector velocity;
     private final int heldItemSlot;
+    private Map<String, ?> persistentData = null;
     private final long lastSeen;
 
     PlayerData(Player player, long lastSeen) {
@@ -72,8 +73,8 @@ public class PlayerData implements Serializable {
         this.totalExperience = player.getTotalExperience();
         this.level = player.getLevel();
         this.exp = player.getExp();
-        this.inventory = player.getInventory().getContents();
-        this.enderchest = player.getEnderChest().getContents();
+        this.inventory = serializeItems(player.getInventory().getContents());
+        this.enderchest = serializeItems(player.getEnderChest().getContents());
         this.potionEffects = player.getActivePotionEffects();
         this.maxHealth = player.getMaxHealth();
         this.health = player.getHealth();
@@ -90,6 +91,32 @@ public class PlayerData implements Serializable {
         this.velocity = player.getVelocity();
         this.heldItemSlot = player.getInventory().getHeldItemSlot();
         this.lastSeen = lastSeen;
+    }
+
+    public ItemStack[] getInventoryContents() {
+        return deserializeItems(inventory);
+    }
+
+    public ItemStack[] getEnderchestContents() {
+        return deserializeItems(enderchest);
+    }
+
+    private static byte[][] serializeItems(ItemStack[] items) {
+        byte[][] itemByteArray = new byte[items.length][];
+        for (int i = 0; i < items.length; i++) {
+            ItemStack item = items[i];
+            itemByteArray[i] = item != null ? item.serializeAsBytes() : null;
+        }
+        return itemByteArray;
+    }
+
+    private static ItemStack[] deserializeItems(byte[][] items) {
+        ItemStack[] itemsArray = new ItemStack[items.length];
+        for (int i = 0; i < items.length; i++) {
+            byte[] itemBytes = items[i];
+            itemsArray[i] = itemBytes != null ? ItemStack.deserializeBytes(itemBytes) : null;
+        }
+        return itemsArray;
     }
 
     /**

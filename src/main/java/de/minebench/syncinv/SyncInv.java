@@ -26,6 +26,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapView;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
@@ -111,6 +112,11 @@ public final class SyncInv extends JavaPlugin {
     private boolean shouldSyncEffects;
 
     /**
+     * Should the plugin try to sync persistent nbt data on the player object?
+     */
+    private boolean shouldSyncPersistentData;
+
+    /**
      * Should the plugin try to fix maps that were transferred over?
      */
     private boolean shouldSyncMaps;
@@ -140,9 +146,13 @@ public final class SyncInv extends JavaPlugin {
     private Field fieldYaw = null;
     private Field fieldPitch = null;
 
+    // Persistent data syncing
+    private Method methodGetRaw = null;
+    private Method methodPutAll = null;
+
     // Map syncing
     private Field fieldWorldMap;
-    
+
     private File playerDataFolder;
 
     @Override
@@ -273,6 +283,8 @@ public final class SyncInv extends JavaPlugin {
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
         shouldSyncEffects = getConfig().getBoolean("sync-effects");
+
+        shouldSyncPersistentData = getConfig().getBoolean("sync-persistent-data");
 
         shouldSyncMaps = getConfig().getBoolean("sync-maps");
 
@@ -499,8 +511,8 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
 
-                player.getInventory().setContents(data.getInventory());
-                player.getEnderChest().setContents(data.getEnderchest());
+                player.getInventory().setContents(data.getInventoryContents());
+                player.getEnderChest().setContents(data.getEnderchestContents());
                 player.setMaxHealth(data.getMaxHealth());
                 player.setHealth(data.getHealth());
                 player.setFoodLevel(data.getFoodLevel());
@@ -512,6 +524,23 @@ public final class SyncInv extends JavaPlugin {
                 player.setMaximumNoDamageTicks(data.getMaxNoDamageTicks());
                 player.setNoDamageTicks(data.getNoDamageTicks());
                 player.setVelocity(data.getVelocity());
+                if (shouldSyncPersistentData && data.getPersistentData() != null) {
+                    try {
+                        PersistentDataContainer pdc = player.getPersistentDataContainer();
+                        if (methodGetRaw == null) {
+                            methodGetRaw = pdc.getClass().getMethod("getRaw");
+                        }
+                        Map<String, ?> raw = (Map<String, ?>) methodGetRaw.invoke(pdc);
+                        if (methodPutAll == null) {
+                            methodPutAll = pdc.getClass().getMethod("putAll", raw.getClass());
+                        }
+                        raw.entrySet().removeIf(e -> !data.getPersistentData().containsKey(e.getKey()));
+                        methodPutAll.invoke(pdc, data.getPersistentData());
+                    } catch (ClassCastException | NoSuchMethodError e) {
+                        getLogger().log(Level.WARNING, "Error while trying to write PersistentDataContainer data. Disabling persistent data syncing!", e);
+                        shouldSyncPersistentData = false;
+                    }
+                }
                 if (player.isOnline()) {
                     if (shouldSyncEffects) {
                         player.addPotionEffects(data.getPotionEffects());
@@ -575,11 +604,24 @@ public final class SyncInv extends JavaPlugin {
     public PlayerData getData(Player player) {
         PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
+        if (shouldSyncPersistentData) {
+            try {
+                PersistentDataContainer pdc = player.getPersistentDataContainer();
+                if (methodGetRaw == null) {
+                    methodGetRaw = pdc.getClass().getMethod("getRaw");
+                }
+                data.setPersistentData((Map<String, ?>) methodGetRaw.invoke(pdc));
+            } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data. Disabling persistent data syncing!", e);
+                shouldSyncPersistentData = false;
+            }
+        }
+
         if (shouldSyncMaps()) {
             // Load maps that are in the inventory/enderchest
             Map<Integer, MapView> maps = new HashMap<>(); // Use set to only add each id once
-            maps.putAll(PlayerData.getMapIds(data.getInventory()));
-            maps.putAll(PlayerData.getMapIds(data.getEnderchest()));
+            maps.putAll(PlayerData.getMapIds(player.getInventory().getContents()));
+            maps.putAll(PlayerData.getMapIds(player.getEnderChest().getContents()));
             // Load the map data contents
             for (MapView map : maps.values()) {
                 try {
