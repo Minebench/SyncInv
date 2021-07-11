@@ -269,7 +269,7 @@ public final class SyncInv extends JavaPlugin {
      * @param syncTypes The types to check
      * @return Whether or not it should be synced
      */
-    public boolean shouldSync(SyncType... syncTypes) {
+    public boolean shouldSyncAny(SyncType... syncTypes) {
         for (SyncType syncType : syncTypes) {
             if (shouldSync(syncType)) {
                 return true;
@@ -613,7 +613,7 @@ public final class SyncInv extends JavaPlugin {
                         player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
                     }
                 }
-                if (shouldSync(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
+                if (shouldSyncAny(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
                     for (Statistic statistic : Statistic.values()) {
                         switch (statistic.getType()) {
                             case UNTYPED:
@@ -756,7 +756,7 @@ public final class SyncInv extends JavaPlugin {
             }
         }
 
-        if (shouldSync(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
+        if (shouldSyncAny(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
             for (Statistic statistic : Statistic.values()) {
                 switch (statistic.getType()) {
                     case UNTYPED:
