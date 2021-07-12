@@ -93,9 +93,9 @@ sync:
 
 # Language settings
 lang:
-  cant-pickup-exp: "&cDu kannst erst Erfahrung aufsammeln wenn deine Spielerdaten geladen sind!"
-  cant-pickup-items: "&cDu kannst erst Items aufsammeln wenn deine Spielerdaten geladen sind!"
-  cant-drop-items: "&cDu kannst erst Items droppen wenn deine Spielerdaten geladen sind!"
-  cant-move: "&cDu kannst dich erst bewegen wenn deine Spielerdaten geladen sind!"
-  wait-for-loading: "&cBitte warte bis deine Spielerdaten geladen sind!"
-  cant-load-data: "&cTut uns leid aber der Server konnte deine aktuellen Daten nicht laden.\nKontaktiere die Serverleitung wenn dies öfter passieren sollte!"
+  cant-pickup-exp: "&cYou can only collect EXP once your player data is loaded!"
+  cant-pickup-items: "&cYou can only collect items once your player data is loaded!"
+  cant-drop-items: "&cYou can only drop items once your player data is loaded!"
+  cant-move: "&cYou can only move once your player data is loaded!"
+  wait-for-loading: "&cPlease wait until your player data is loaded!"
+  cant-load-data: "&cSorry but the server wasn't able to load your latest player data.\nPlease contact an administrator if this happens often!"
