@@ -770,10 +770,12 @@ public final class SyncInv extends JavaPlugin {
                     case ENTITY:
                         if (shouldSync(SyncType.ENTITY_STATISTICS)) {
                             for (EntityType entityType : EntityType.values()) {
-                                int value = player.getStatistic(statistic, entityType);
-                                if (value > 0) {
-                                    data.getStatistics().put(statistic, entityType.name(), value);
-                                }
+                                try {
+                                    int value = player.getStatistic(statistic, entityType);
+                                    if (value > 0) {
+                                        data.getStatistics().put(statistic, entityType.name(), value);
+                                    }
+                                } catch (IllegalArgumentException ignored) {} // This statistic doesn't exist
                             }
                         }
                         break;
@@ -781,10 +783,12 @@ public final class SyncInv extends JavaPlugin {
                         if (shouldSync(SyncType.BLOCK_STATISTICS)) {
                             for (Material blockType : Material.values()) {
                                 if (blockType.isBlock()) {
-                                    int value = player.getStatistic(statistic, blockType);
-                                    if (value > 0) {
-                                        data.getStatistics().put(statistic, blockType.name(), value);
-                                    }
+                                    try {
+                                        int value = player.getStatistic(statistic, blockType);
+                                        if (value > 0) {
+                                            data.getStatistics().put(statistic, blockType.name(), value);
+                                        }
+                                    } catch (IllegalArgumentException ignored) {} // This statistic doesn't exist
                                 }
                             }
                         }
@@ -793,10 +797,12 @@ public final class SyncInv extends JavaPlugin {
                         if (shouldSync(SyncType.ITEM_STATISTICS)) {
                             for (Material itemType : Material.values()) {
                                 if (itemType.isItem()) {
-                                    int value = player.getStatistic(statistic, itemType);
-                                    if (value > 0) {
-                                        data.getStatistics().put(statistic, itemType.name(), value);
-                                    }
+                                    try {
+                                        int value = player.getStatistic(statistic, itemType);
+                                        if (value > 0) {
+                                            data.getStatistics().put(statistic, itemType.name(), value);
+                                        }
+                                    } catch (IllegalArgumentException ignored) {} // This statistic doesn't exist
                                 }
                             }
                         }
