@@ -574,11 +574,11 @@ public final class SyncInv extends JavaPlugin {
                         }
                         Map<String, ?> raw = (Map<String, ?>) methodGetRaw.invoke(pdc);
                         if (methodPutAll == null) {
-                            methodPutAll = pdc.getClass().getMethod("putAll", raw.getClass());
+                            methodPutAll = pdc.getClass().getMethod("putAll", Map.class);
                         }
                         raw.entrySet().removeIf(e -> !data.getPersistentData().containsKey(e.getKey()));
                         methodPutAll.invoke(pdc, data.getPersistentData());
-                    } catch (ClassCastException | NoSuchMethodError e) {
+                    } catch (ClassCastException | NoSuchMethodException e) {
                         getLogger().log(Level.WARNING, "Error while trying to write PersistentDataContainer data. Disabling persistent data syncing!", e);
                         disableSync(SyncType.PERSISTENT_DATA);
                     }
@@ -638,8 +638,8 @@ public final class SyncInv extends JavaPlugin {
                                 if (shouldSync(SyncType.BLOCK_STATISTICS)) {
                                     for (Material blockType : Material.values()) {
                                         if (blockType.isBlock()) {
-                                            int value = data.getStatistics().get(statistic, blockType.name());
-                                            if (value > 0) {
+                                            Integer value = data.getStatistics().get(statistic, blockType.name());
+                                            if (value != null && value > 0) {
                                                 player.setStatistic(statistic, blockType, value);
                                             }
                                         }
@@ -650,8 +650,8 @@ public final class SyncInv extends JavaPlugin {
                                 if (shouldSync(SyncType.ITEM_STATISTICS)) {
                                     for (Material itemType : Material.values()) {
                                         if (itemType.isItem()) {
-                                            int value = data.getStatistics().get(statistic, itemType.name());
-                                            if (value > 0) {
+                                            Integer value = data.getStatistics().get(statistic, itemType.name());
+                                            if (value != null && value > 0) {
                                                 player.setStatistic(statistic, itemType, value);
                                             }
                                         }
