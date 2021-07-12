@@ -108,7 +108,7 @@ public class RedisMessenger extends ServerMessenger {
 
     @Override
     protected void close() {
-        connection.close();
+        client.shutdown();
     }
 
     @Override
