@@ -56,6 +56,8 @@ public class PlayerFreezeListener implements Listener {
             e.setCancelled(true);
             if (e.getFrom().getBlockY() == e.getTo().getBlockY()) {
                 e.getPlayer().sendMessage(plugin.getLang("cant-move"));
+            } else {
+                e.getPlayer().setFallDistance(Math.min(0, e.getPlayer().getFallDistance() - 1));
             }
         }
     }

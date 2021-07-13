@@ -578,6 +578,8 @@ public final class SyncInv extends JavaPlugin {
                 }
                 if (shouldSync(SyncType.VELOCITY))
                     player.setVelocity(data.getVelocity());
+                if (shouldSync(SyncType.FALL_DISTANCE))
+                    player.setFallDistance(data.getFallDistance());
                 if (shouldSync(SyncType.PERSISTENT_DATA) && data.getPersistentData() != null) {
                     try {
                         PersistentDataContainer pdc = player.getPersistentDataContainer();

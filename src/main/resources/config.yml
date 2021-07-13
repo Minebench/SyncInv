@@ -74,6 +74,9 @@ sync:
   no-damage-ticks: true
   # Should the plugin to sync the player's current velocity?
   velocity: true
+  # Should the plugin sync the player's current fall distance?
+  # (Might kill player on other server when log in on the ground)
+  fall-distance: false
   # Should the plugin try to sync player effects? (Only works when the player is actually online, not for offline storage)
   effects: false
   # Should the plugin try to sync persistent nbt data on the player object?

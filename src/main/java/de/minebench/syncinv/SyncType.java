@@ -30,6 +30,7 @@ public enum SyncType {
     AIR,
     FIRE,
     NO_DAMAGE_TICKS,
+    FALL_DISTANCE,
     VELOCITY,
     EFFECTS,
     MAPS,

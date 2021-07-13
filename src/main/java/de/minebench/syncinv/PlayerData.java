@@ -67,6 +67,7 @@ public class PlayerData implements Serializable {
     private final int fireTicks;
     private final int maxNoDamageTicks;
     private final int noDamageTicks;
+    private final float fallDistance;
     private final Vector velocity;
     private final int heldItemSlot;
     private Map<String, Object> persistentData = null;
@@ -97,6 +98,7 @@ public class PlayerData implements Serializable {
         this.maxNoDamageTicks = player.getMaximumNoDamageTicks();
         this.noDamageTicks = player.getNoDamageTicks();
         this.velocity = player.getVelocity();
+        this.fallDistance = player.getFallDistance();
         this.heldItemSlot = player.getInventory().getHeldItemSlot();
         this.lastSeen = lastSeen;
     }
