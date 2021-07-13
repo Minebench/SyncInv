@@ -43,7 +43,7 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = -1100374391372034852L;
+    private static final long serialVersionUID = -1100374391372034853L;
     private final long timeStamp = System.currentTimeMillis();
     private final UUID playerId;
     private final String playerName;
@@ -69,7 +69,7 @@ public class PlayerData implements Serializable {
     private final int noDamageTicks;
     private final Vector velocity;
     private final int heldItemSlot;
-    private Map<String, ?> persistentData = null;
+    private Map<String, Object> persistentData = null;
     private final Map<String, Map<String, Long>> advancementProgress = new HashMap<>();
     private final Table<Statistic, String, Integer> statistics = HashBasedTable.create();
     private final long lastSeen;

@@ -146,6 +146,8 @@ public final class SyncInv extends JavaPlugin {
     private Field fieldPitch = null;
 
     // Persistent data syncing
+    private Method methodDeserializeCompound = null;
+    private Method methodPdcSerialize = null;
     private Method methodGetRaw = null;
     private Method methodPutAll = null;
 
@@ -232,6 +234,16 @@ public final class SyncInv extends JavaPlugin {
 
         if (getServer().getMap((short) 0) == null) {
             getServer().createMap(getServer().getWorlds().get(0));
+        }
+        try {
+            String basePackage = getServer().getClass().getPackage().getName();
+            Class<?> c = Class.forName(basePackage + ".util.CraftNBTTagConfigSerializer");
+            methodDeserializeCompound = c.getMethod("deserialize", Object.class);
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            if (shouldSync(SyncType.PERSISTENT_DATA)) {
+                getLogger().log(Level.WARNING, "Could not load static method required for persistent data syncing. Disabling it!", e);
+                disableSync(SyncType.PERSISTENT_DATA);
+            }
         }
         try {
             MapView map = null;
@@ -573,11 +585,14 @@ public final class SyncInv extends JavaPlugin {
                             methodGetRaw = pdc.getClass().getMethod("getRaw");
                         }
                         Map<String, ?> raw = (Map<String, ?>) methodGetRaw.invoke(pdc);
-                        if (methodPutAll == null) {
-                            methodPutAll = pdc.getClass().getMethod("putAll", Map.class);
-                        }
                         raw.entrySet().removeIf(e -> !data.getPersistentData().containsKey(e.getKey()));
-                        methodPutAll.invoke(pdc, data.getPersistentData());
+
+                        if (methodPutAll == null) {
+                            Method toTagCompound = pdc.getClass().getMethod("toTagCompound");
+                            Object tagCompound = toTagCompound.invoke(pdc);
+                            methodPutAll = pdc.getClass().getMethod("putAll", tagCompound.getClass());
+                        }
+                        methodPutAll.invoke(pdc, methodDeserializeCompound.invoke(null, data.getPersistentData()));
                     } catch (ClassCastException | NoSuchMethodException e) {
                         getLogger().log(Level.WARNING, "Error while trying to write PersistentDataContainer data. Disabling persistent data syncing!", e);
                         disableSync(SyncType.PERSISTENT_DATA);
@@ -731,10 +746,10 @@ public final class SyncInv extends JavaPlugin {
         if (shouldSync(SyncType.PERSISTENT_DATA)) {
             try {
                 PersistentDataContainer pdc = player.getPersistentDataContainer();
-                if (methodGetRaw == null) {
-                    methodGetRaw = pdc.getClass().getMethod("getRaw");
+                if (methodPdcSerialize == null) {
+                    methodPdcSerialize = pdc.getClass().getMethod("serialize");
                 }
-                data.setPersistentData((Map<String, ?>) methodGetRaw.invoke(pdc));
+                data.setPersistentData((Map<String, Object>) methodPdcSerialize.invoke(pdc));
             } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data. Disabling persistent data syncing!", e);
                 disableSync(SyncType.PERSISTENT_DATA);

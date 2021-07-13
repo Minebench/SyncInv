@@ -54,7 +54,9 @@ public class PlayerFreezeListener implements Listener {
     public void onPlayerMove(PlayerMoveEvent e) {
         if(!sameBlock(e.getFrom(), e.getTo()) && plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
-            e.getPlayer().sendMessage(plugin.getLang("cant-move"));
+            if (e.getFrom().getBlockY() == e.getTo().getBlockY()) {
+                e.getPlayer().sendMessage(plugin.getLang("cant-move"));
+            }
         }
     }
 
