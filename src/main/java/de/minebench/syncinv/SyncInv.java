@@ -145,6 +145,9 @@ public final class SyncInv extends JavaPlugin {
     private Field fieldYaw = null;
     private Field fieldPitch = null;
 
+    // Offline player health setting
+    private Method methodSetHealth;
+
     // Persistent data syncing
     private Method methodDeserializeCompound = null;
     private Method methodPdcSerialize = null;
@@ -558,7 +561,20 @@ public final class SyncInv extends JavaPlugin {
                     player.setGameMode(data.getGamemode());
                 if (shouldSync(SyncType.HEALTH)) {
                     player.setMaxHealth(data.getMaxHealth());
-                    player.setHealth(data.getHealth());
+                    try {
+                        if (methodGetHandle == null) {
+                            methodGetHandle = player.getClass().getMethod("getHandle");
+                        }
+                        Object handle = methodGetHandle.invoke(player);
+                        if (handle != null) {
+                            if (methodSetHealth == null) {
+                                methodSetHealth = handle.getClass().getMethod("setHealth", float.class);
+                            }
+                            methodSetHealth.invoke(handle, (float) data.getHealth());
+                        }
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        player.setHealth(data.getHealth() > 0 || player.isOnline() ? data.getHealth() : 1);
+                    }
                 }
                 if (shouldSync(SyncType.HUNGER))
                     player.setFoodLevel(data.getFoodLevel());
