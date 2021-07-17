@@ -711,17 +711,20 @@ public final class SyncInv extends JavaPlugin {
                 if (getOpenInv() != null && !player.isOnline()) {
                     player.saveData();
                 }
+                setLastSeen(data.getPlayerId(), data.getLastSeen());
             } catch (Exception e) {
                 getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
                 if (createdNewFile) {
                     new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
+                } else {
+                    // Failed to apply data, make sure our locally stored data is older than the newest
+                    setLastSeen(data.getPlayerId(), data.getLastSeen() - 1);
                 }
             } finally {
                 if (getOpenInv() != null) {
                     getOpenInv().releasePlayer(player, this);
                     getOpenInv().unload(player);
                 }
-                setLastSeen(data.getPlayerId(), data.getLastSeen());
             }
         });
     }
