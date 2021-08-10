@@ -26,6 +26,7 @@ import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -560,21 +561,7 @@ public final class SyncInv extends JavaPlugin {
                 if (shouldSync(SyncType.GAMEMODE))
                     player.setGameMode(data.getGamemode());
                 if (shouldSync(SyncType.HEALTH)) {
-                    player.setMaxHealth(data.getMaxHealth());
-                    try {
-                        if (methodGetHandle == null) {
-                            methodGetHandle = player.getClass().getMethod("getHandle");
-                        }
-                        Object handle = methodGetHandle.invoke(player);
-                        if (handle != null) {
-                            if (methodSetHealth == null) {
-                                methodSetHealth = handle.getClass().getMethod("setHealth", float.class);
-                            }
-                            methodSetHealth.invoke(handle, (float) data.getHealth());
-                        }
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        player.setHealth(data.getHealth() > 0 || player.isOnline() ? data.getHealth() : 1);
-                    }
+                    player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(data.getMaxHealth());
                 }
                 if (shouldSync(SyncType.HUNGER))
                     player.setFoodLevel(data.getFoodLevel());
@@ -699,12 +686,31 @@ public final class SyncInv extends JavaPlugin {
                         player.addPotionEffects(data.getPotionEffects());
                     }
                     if (shouldSync(SyncType.HEALTH)) {
-                        player.setHealthScaled(data.isHealthScaled());
                         player.setHealthScale(data.getHealthScale());
+                        player.setHealthScaled(data.isHealthScaled());
+                        player.setHealth(Math.min(data.getHealth(), player.getMaxHealth()));
                     }
                     if (shouldSync(SyncType.INVENTORY)) {
                         player.getInventory().setHeldItemSlot(data.getHeldItemSlot());
                         player.updateInventory();
+                    }
+                } else {
+                    if (shouldSync(SyncType.HEALTH)) {
+                        double health = Math.min(data.getHealth(), player.getMaxHealth());
+                        try {
+                            if (methodGetHandle == null) {
+                                methodGetHandle = player.getClass().getMethod("getHandle");
+                            }
+                            Object handle = methodGetHandle.invoke(player);
+                            if (handle != null) {
+                                if (methodSetHealth == null) {
+                                    methodSetHealth = handle.getClass().getMethod("setHealth", float.class);
+                                }
+                                methodSetHealth.invoke(handle, (float) health);
+                            }
+                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                            player.setHealth(health > 0 ? health : 1);
+                        }
                     }
                 }
                 finished.run();

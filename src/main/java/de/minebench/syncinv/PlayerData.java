@@ -8,6 +8,7 @@ import lombok.ToString;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -85,7 +86,7 @@ public class PlayerData implements Serializable {
         this.inventory = serializeItems(player.getInventory().getContents());
         this.enderchest = serializeItems(player.getEnderChest().getContents());
         this.potionEffects = player.getActivePotionEffects();
-        this.maxHealth = player.getMaxHealth();
+        this.maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
         this.health = player.getHealth();
         this.isHealthScaled = player.isHealthScaled();
         this.healthScale = player.getHealthScale();
