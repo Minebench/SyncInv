@@ -44,8 +44,9 @@ import java.util.UUID;
 @Getter
 @Setter
 public class PlayerData implements Serializable {
-    private static final long serialVersionUID = -1100374391372034853L;
+    private static final long serialVersionUID = -1100374391372034854L;
     private final long timeStamp = System.currentTimeMillis();
+    private final int dataVersion;
     private final UUID playerId;
     private final String playerName;
     private final GameMode gamemode;
@@ -77,6 +78,7 @@ public class PlayerData implements Serializable {
     private final long lastSeen;
 
     PlayerData(Player player, long lastSeen) {
+        this.dataVersion = player.getServer().getUnsafe().getDataVersion();
         this.playerId = player.getUniqueId();
         this.playerName = player.getName();
         this.gamemode = player.getGameMode();

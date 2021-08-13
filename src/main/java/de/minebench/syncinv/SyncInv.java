@@ -445,6 +445,12 @@ public final class SyncInv extends JavaPlugin {
         if (data == null)
             return;
 
+        if (data.getDataVersion() != getServer().getUnsafe().getDataVersion()) {
+            getLogger().log(Level.WARNING, "Received data with "
+                    + (data.getDataVersion() < getServer().getUnsafe().getDataVersion() ? "older" : "newer")
+                    + " Minecraft data version (" + data.getDataVersion() + ") than this server (" + getServer().getUnsafe().getDataVersion() + "). Trying to apply anyways but there will most likely be errors! Please try running the same Server version on all synced servers.");
+        }
+
         runSync(() -> {
             Player player = getServer().getPlayer(data.getPlayerId());
             boolean createdNewFile = false;
