@@ -25,7 +25,7 @@ Pre-build plugin jars can be downloaded from the [Minebench.de build server](htt
 ## License
 
 ```
-SyncInv - Bukkit cross server player data syncing
+SyncInv - Cross server player data syncing
 Copyright (C) 2021 Max Lee aka Phoenix616 (max@themoep.de)
 
 This program is free software: you can redistribute it and/or modify
