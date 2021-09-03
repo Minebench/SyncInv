@@ -328,7 +328,12 @@ public final class SyncInv extends JavaPlugin {
 
         enabledSyncTypes = EnumSet.noneOf(SyncType.class);
         for (SyncType syncType : SyncType.values()) {
-            if (getConfig().getBoolean("sync." + syncType.getKey(), getConfig().getBoolean("sync-" + syncType.getKey()))) {
+            String key = "sync." + syncType.getKey();
+            if (!getConfig().contains(key, true)
+                    && getConfig().contains("sync-" + syncType.getKey(), true)) {
+                key = "sync-" + syncType.getKey();
+            }
+            if (getConfig().getBoolean(key)) {
                 enabledSyncTypes.add(syncType);
             }
         }
