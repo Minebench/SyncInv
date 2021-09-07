@@ -159,6 +159,8 @@ public final class SyncInv extends JavaPlugin {
 
     // Map syncing
     private Field fieldWorldMap;
+    private Field fieldMapColor;
+    private Field fieldMapWorldId;
 
     private File playerDataFolder;
 
@@ -261,11 +263,15 @@ public final class SyncInv extends JavaPlugin {
             if (map != null) {
                 fieldWorldMap = map.getClass().getDeclaredField("worldMap");
                 fieldWorldMap.setAccessible(true);
+                Object worldMap = fieldWorldMap.get(map);
+                fieldMapColor = worldMap.getClass().getField("colors");
+                fieldMapWorldId = worldMap.getClass().getDeclaredField("uniqueId");
+                fieldMapWorldId.setAccessible(true);
             } else if (shouldSync(SyncType.MAPS)) {
-                getLogger().log(Level.WARNING, "Could not get a map to laod the field required for map syncing. Disabling it!");
+                getLogger().log(Level.WARNING, "Could not get a map to load the field required for map syncing. Disabling it!");
                 disableSync(SyncType.MAPS);
             }
-        } catch (NoSuchFieldException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             if (shouldSync(SyncType.MAPS)) {
                 getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
                 disableSync(SyncType.MAPS);
@@ -546,21 +552,13 @@ public final class SyncInv extends JavaPlugin {
                             map.setCenterX(mapData.getCenterX());
                             map.setCenterZ(mapData.getCenterZ());
                             map.setScale(mapData.getScale());
-                            Field colorField = worldMap.getClass().getField("colors");
-                            colorField.set(worldMap, mapData.getColors());
+                            fieldMapColor.set(worldMap, mapData.getColors());
 
                             if (getServer().getWorld(mapData.getWorldId()) != null) {
                                 map.setWorld(getServer().getWorld(mapData.getWorldId()));
-                            } else {
-                                Field dimensionField = worldMap.getClass().getField("map");
-                                dimensionField.set(worldMap, (byte) 127);
-                                Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
-                                worldIdField.setAccessible(true);
-                                worldIdField.set(worldMap, mapData.getWorldId());
                             }
+                            fieldMapWorldId.set(worldMap, mapData.getWorldId()); // plugin API doesn't change UUID on world set so set it always
                             player.sendMap(map);
-                        } catch (NoSuchFieldException e) {
-                            getLogger().log(Level.SEVERE, "Could not get field from map " + mapData.getId() + "! ", e);
                         } catch (IllegalAccessException e) {
                             getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
                         }
@@ -875,8 +873,7 @@ public final class SyncInv extends JavaPlugin {
             for (MapView map : maps.values()) {
                 try {
                     Object worldMap = fieldWorldMap.get(map);
-                    Field colorField = worldMap.getClass().getField("colors");
-                    byte[] colors = (byte[]) colorField.get(worldMap);
+                    byte[] colors = (byte[]) fieldMapColor.get(worldMap);
 
                     UUID worldId = getWorldId(map);
                     if (worldId == null) {
@@ -892,8 +889,6 @@ public final class SyncInv extends JavaPlugin {
                             map.getScale(),
                             colors
                     ));
-                } catch (NoSuchFieldException e) {
-                    getLogger().log(Level.SEVERE, "Could not get field from map " + map.getId() + "! ", e);
                 } catch (IllegalAccessException e) {
                     getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
                 }
@@ -996,21 +991,14 @@ public final class SyncInv extends JavaPlugin {
         if (map == null) {
             return null;
         }
-        try {
-            Object worldMap = fieldWorldMap.get(map);
-            UUID worldId;
-            if (map.getWorld() == null) {
-                Field worldIdField = worldMap.getClass().getDeclaredField("uniqueId");
-                worldIdField.setAccessible(true);
-                worldId = (UUID) worldIdField.get(worldMap);
-            } else {
-                worldId = map.getWorld().getUID();
+        if (map.getWorld() == null) {
+            try {
+                return (UUID) fieldMapWorldId.get(fieldWorldMap.get(map));
+            } catch (IllegalAccessException e) {
+                getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
             }
-            return worldId;
-        } catch (NoSuchFieldException e) {
-            getLogger().log(Level.SEVERE, "Could not get field from map " + map.getId() + "! ", e);
-        } catch (IllegalAccessException e) {
-            getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
+        } else {
+            return map.getWorld().getUID();
         }
         return null;
     }

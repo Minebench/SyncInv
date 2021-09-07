@@ -143,7 +143,7 @@ public class PlayerData implements Serializable {
     public static Map<? extends Integer, ? extends MapView> getMapIds(ItemStack[] items) {
         Map<Integer, MapView> maps = new HashMap<>();
         for (ItemStack item : items) {
-            if (item != null && item.getType() == Material.MAP) {
+            if (item != null && item.getType() == Material.FILLED_MAP) {
                 ItemMeta meta = item.getItemMeta();
                 if (meta instanceof MapMeta && ((MapMeta) meta).hasMapView()) {
                     MapView view = ((MapMeta) meta).getMapView();
