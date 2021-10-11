@@ -239,48 +239,6 @@ public final class SyncInv extends JavaPlugin {
             getCommand("openinv").setExecutor(forwarding);
             getCommand("openender").setExecutor(forwarding);
         }
-
-        if (getServer().getMap((short) 0) == null) {
-            getServer().createMap(getServer().getWorlds().get(0));
-        }
-        try {
-            String basePackage = getServer().getClass().getPackage().getName();
-            Class<?> c = Class.forName(basePackage + ".util.CraftNBTTagConfigSerializer");
-            methodDeserializeCompound = c.getMethod("deserialize", Object.class);
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            if (shouldSync(SyncType.PERSISTENT_DATA)) {
-                getLogger().log(Level.WARNING, "Could not load static method required for persistent data syncing. Disabling it!", e);
-                disableSync(SyncType.PERSISTENT_DATA);
-            }
-        }
-        try {
-            MapView map = null;
-            for (short i = 0; i < Short.MAX_VALUE && map == null; i++) {
-                try {
-                    map = getServer().getMap(i);
-                } catch (IllegalArgumentException ignored) {}
-            }
-            if (map != null) {
-                fieldWorldMap = map.getClass().getDeclaredField("worldMap");
-                fieldWorldMap.setAccessible(true);
-                Object worldMap = fieldWorldMap.get(map);
-                try {
-                    fieldMapColor = worldMap.getClass().getField("g");
-                } catch (NoSuchFieldException e) {
-                    fieldMapColor = worldMap.getClass().getField("colors");
-                }
-                fieldMapWorldId = worldMap.getClass().getDeclaredField("uniqueId");
-                fieldMapWorldId.setAccessible(true);
-            } else if (shouldSync(SyncType.MAPS)) {
-                getLogger().log(Level.WARNING, "Could not get a map to load the field required for map syncing. Disabling it!");
-                disableSync(SyncType.MAPS);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            if (shouldSync(SyncType.MAPS)) {
-                getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
-                disableSync(SyncType.MAPS);
-            }
-        }
     }
 
     /**
@@ -350,6 +308,52 @@ public final class SyncInv extends JavaPlugin {
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
+        }
+
+        if (shouldSync(SyncType.PERSISTENT_DATA)) {
+            try {
+                String basePackage = getServer().getClass().getPackage().getName();
+                Class<?> c = Class.forName(basePackage + ".util.CraftNBTTagConfigSerializer");
+                methodDeserializeCompound = c.getMethod("deserialize", Object.class);
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                if (shouldSync(SyncType.PERSISTENT_DATA)) {
+                    getLogger().log(Level.WARNING, "Could not load static method required for persistent data syncing. Disabling it!", e);
+                    disableSync(SyncType.PERSISTENT_DATA);
+                }
+            }
+        }
+
+        if (getServer().getMap((short) 0) == null) {
+            getServer().createMap(getServer().getWorlds().get(0));
+        }
+        try {
+            MapView map = null;
+            for (short i = 0; i < Short.MAX_VALUE && map == null; i++) {
+                try {
+                    map = getServer().getMap(i);
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            if (map != null) {
+                fieldWorldMap = map.getClass().getDeclaredField("worldMap");
+                fieldWorldMap.setAccessible(true);
+                Object worldMap = fieldWorldMap.get(map);
+                try {
+                    fieldMapColor = worldMap.getClass().getField("g");
+                } catch (NoSuchFieldException e) {
+                    fieldMapColor = worldMap.getClass().getField("colors");
+                }
+                fieldMapWorldId = worldMap.getClass().getDeclaredField("uniqueId");
+                fieldMapWorldId.setAccessible(true);
+            } else if (shouldSync(SyncType.MAPS)) {
+                getLogger().log(Level.WARNING, "Could not get a map to load the field required for map syncing. Disabling it!");
+                disableSync(SyncType.MAPS);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            if (shouldSync(SyncType.MAPS)) {
+                getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
+                disableSync(SyncType.MAPS);
+            }
         }
     }
 
