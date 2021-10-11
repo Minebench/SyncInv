@@ -264,7 +264,11 @@ public final class SyncInv extends JavaPlugin {
                 fieldWorldMap = map.getClass().getDeclaredField("worldMap");
                 fieldWorldMap.setAccessible(true);
                 Object worldMap = fieldWorldMap.get(map);
-                fieldMapColor = worldMap.getClass().getField("colors");
+                try {
+                    fieldMapColor = worldMap.getClass().getField("g");
+                } catch (NoSuchFieldException e) {
+                    fieldMapColor = worldMap.getClass().getField("colors");
+                }
                 fieldMapWorldId = worldMap.getClass().getDeclaredField("uniqueId");
                 fieldMapWorldId.setAccessible(true);
             } else if (shouldSync(SyncType.MAPS)) {
