@@ -577,8 +577,14 @@ public final class SyncInv extends JavaPlugin {
                     player.getInventory().setContents(data.getInventoryContents());
                 if (shouldSync(SyncType.ENDERCHEST))
                     player.getEnderChest().setContents(data.getEnderchestContents());
-                if (shouldSync(SyncType.GAMEMODE))
-                    player.setGameMode(data.getGamemode());
+                if (shouldSync(SyncType.GAMEMODE)) {
+                    if (data.getGamemode() != null) {
+                        player.setGameMode(data.getGamemode());
+                    } else {
+                        getLogger().log(Level.WARNING, "Data of " + player.getName() + " did not contain gamemode! Setting it to server default " + getServer().getDefaultGameMode());
+                        player.setGameMode(getServer().getDefaultGameMode());
+                    }
+                }
                 if (shouldSync(SyncType.HEALTH)) {
                     player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(data.getMaxHealth());
                 }
