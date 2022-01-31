@@ -147,6 +147,8 @@ public final class SyncInv extends JavaPlugin {
     private Method methodSetPositionRaw;
     private Field fieldYaw = null;
     private Field fieldPitch = null;
+    private Method methodSetYaw = null;
+    private Method methodSetPitch = null;
 
     // Offline player health setting
     private Method methodSetHealth;
@@ -499,16 +501,31 @@ public final class SyncInv extends JavaPlugin {
                             methodGetHandle = player.getClass().getMethod("getHandle");
                         }
                         Object entity = methodGetHandle.invoke(player);
-                        if (methodSetPositionRaw == null || fieldYaw == null || fieldPitch == null) {
+                        if (methodSetPositionRaw == null || (fieldYaw == null && methodSetYaw == null) || (fieldPitch == null || methodSetPitch == null)) {
                             methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
-                            fieldYaw = entity.getClass().getField("yaw");
-                            fieldPitch = entity.getClass().getField("pitch");
+                            try {
+                                fieldYaw = entity.getClass().getField("yaw");
+                                fieldPitch = entity.getClass().getField("pitch");
+                            } catch (NoSuchFieldException e) {
+                                try {
+                                    methodSetYaw = entity.getClass().getMethod("setYRot", float.class);
+                                    methodSetPitch = entity.getClass().getMethod("setYRot", float.class);
+                                } catch (NoSuchMethodException ignored) {}
+                            }
                         }
                         Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
                         methodSetPositionRaw.invoke(entity, spawn.getX(), spawn.getY(), spawn.getZ());
-                        fieldYaw.set(entity, spawn.getYaw());
-                        fieldPitch.set(entity, spawn.getPitch());
-                    } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
+                        if (fieldYaw != null) {
+                            fieldYaw.set(entity, spawn.getYaw());
+                        } else if (methodSetYaw != null) {
+                            methodSetYaw.invoke(entity, spawn.getYaw());
+                        }
+                        if (fieldPitch != null) {
+                            fieldPitch.set(entity, spawn.getPitch());
+                        } else if (methodSetPitch != null) {
+                            methodSetPitch.invoke(entity, spawn.getPitch());
+                        }
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
                         storeUnknownPlayers = false;
                         player = null;
