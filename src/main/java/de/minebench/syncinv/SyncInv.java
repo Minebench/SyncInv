@@ -646,9 +646,14 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
                 if (shouldSync(SyncType.ADVANCEMENTS)) {
-                    Boolean oldGamerule = player.getWorld().getGameRuleValue(GameRule.ANNOUNCE_ADVANCEMENTS);
-                    if ((oldGamerule != null && oldGamerule) || (oldGamerule == null && player.getWorld().getGameRuleDefault(GameRule.ANNOUNCE_ADVANCEMENTS))) {
-                        player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                    Boolean oldGamerule = null;
+                    try {
+                        oldGamerule = player.getWorld().getGameRuleValue(GameRule.ANNOUNCE_ADVANCEMENTS);
+                        if ((oldGamerule != null && oldGamerule) || (oldGamerule == null && player.getWorld().getGameRuleDefault(GameRule.ANNOUNCE_ADVANCEMENTS))) {
+                            player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                        }
+                    } catch (NullPointerException ignored) {
+                        // world is not known
                     }
                     for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
                         Advancement advancement = it.next();
@@ -672,7 +677,11 @@ public final class SyncInv extends JavaPlugin {
                         }
                     }
                     if (oldGamerule == null || oldGamerule) {
-                        player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
+                        try {
+                            player.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, true);
+                        } catch (NullPointerException ignored) {
+                            // world is not known
+                        }
                     }
                 }
                 if (shouldSyncAny(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
