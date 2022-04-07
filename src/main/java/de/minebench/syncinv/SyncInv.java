@@ -310,6 +310,7 @@ public final class SyncInv extends JavaPlugin {
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
+            getLogger().log(Level.INFO, "Hooked into " + openInv.getName() + " " + openInv.getDescription().getVersion());
         }
 
         if (shouldSync(SyncType.PERSISTENT_DATA)) {
@@ -495,6 +496,9 @@ public final class SyncInv extends JavaPlugin {
                     createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
                 }
                 player = getOpenInv().loadPlayer(offlinePlayer);
+                if (player == null) {
+                    logDebug("Unable to load player " + offlinePlayer.getName() + "/" + offlinePlayer.getUniqueId() + " data with OpenInv");
+                }
                 if (createdNewFile) {
                     try {
                         if (methodGetHandle == null) {
