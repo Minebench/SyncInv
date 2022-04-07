@@ -506,7 +506,13 @@ public final class SyncInv extends JavaPlugin {
                         }
                         Object entity = methodGetHandle.invoke(player);
                         if (methodSetPositionRaw == null || (fieldYaw == null && methodSetYaw == null) || (fieldPitch == null || methodSetPitch == null)) {
-                            methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
+                            try {
+                                methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
+                            } catch (NoSuchMethodException e) {
+                                // TODO: Better obfuscation support
+                                // 1.18-1.18.2
+                                methodSetPositionRaw = entity.getClass().getMethod("e", double.class, double.class, double.class);
+                            }
                             try {
                                 fieldYaw = entity.getClass().getField("yaw");
                                 fieldPitch = entity.getClass().getField("pitch");
