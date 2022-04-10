@@ -234,9 +234,8 @@ public final class SyncInv extends JavaPlugin {
                         });
                         return true;
                     }
-                    return openInvCommand.onCommand(sender, command, label, args);
                 }
-                return openInvCommand.onCommand(sender, command, label, new String[]{sender.getName()});
+                return openInvCommand.onCommand(sender, command, label, args);
             };
             getCommand("openinv").setExecutor(forwarding);
             getCommand("openender").setExecutor(forwarding);
