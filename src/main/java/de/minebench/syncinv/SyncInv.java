@@ -408,7 +408,7 @@ public final class SyncInv extends JavaPlugin {
                 return System.currentTimeMillis();
             }
         }
-        File playerDat = new File(playerDataFolder, playerId + ".dat");
+        File playerDat = getPlayerDataFile(playerId);
         return playerDat.lastModified();
     }
 
@@ -420,9 +420,8 @@ public final class SyncInv extends JavaPlugin {
      * @return          true if the time was successfully set
      */
     public boolean setLastSeen(UUID playerId, long timeStamp) {
-        File playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
-        File playerDat = new File(playerDataFolder, playerId + ".dat");
-        return playerDat.setLastModified(timeStamp);
+        File playerDat = getPlayerDataFile(playerId);
+        return playerDat.exists() && playerDat.setLastModified(timeStamp);
     }
 
     /**
@@ -539,7 +538,7 @@ public final class SyncInv extends JavaPlugin {
                         getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
                         storeUnknownPlayers = false;
                         player = null;
-                        new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
+                        getPlayerDataFile(data.getPlayerId()).delete();
                         getOpenInv().unload(offlinePlayer);
                     }
                 }
@@ -776,16 +775,35 @@ public final class SyncInv extends JavaPlugin {
                 }
                 finished.run();
                 if (getOpenInv() != null && !player.isOnline()) {
+                    File playerDat = getPlayerDataFile(data.getPlayerId());
+                    // Store original player file modification date to compare after save to catch error while saving as that's not thrown
+                    long lastModification = playerDat.lastModified();
+
+                    // Try to save data
                     player.saveData();
+
+                    // Check for temporary file
+                    if (new File(playerDataFolder, data.getPlayerId() + "-.dat").exists()) {
+                        throw new RuntimeException("Error while trying to save new player data file after creating temp file!");
+                    }
+
+
+                    // If the file was not modified while saving then an error occurred which didn't throw an uncaught exception
+                    if (playerDat.lastModified() == lastModification) {
+                        throw new RuntimeException("Internal error while trying to save new player data file!");
+                    }
                 }
                 setLastSeen(data.getPlayerId(), data.getLastSeen());
             } catch (Exception e) {
                 getLogger().log(Level.SEVERE, "Error while applying player data of " + player.getName() + "!", e);
-                if (createdNewFile) {
-                    new File(playerDataFolder, data.getPlayerId() + ".dat").delete();
-                } else {
-                    // Failed to apply data, make sure our locally stored data is older than the newest
-                    setLastSeen(data.getPlayerId(), data.getLastSeen() - 1);
+                File playerDat = getPlayerDataFile(data.getPlayerId());
+                if (playerDat.exists()) {
+                    if (createdNewFile) {
+                        playerDat.delete();
+                    } else if (playerDat.lastModified() >= data.getLastSeen()) {
+                        // Failed to apply data, make sure our locally stored data is older than the newest
+                        playerDat.setLastModified(data.getLastSeen() - 1);
+                    }
                 }
             } finally {
                 if (getOpenInv() != null) {
@@ -809,8 +827,12 @@ public final class SyncInv extends JavaPlugin {
         return playerDataCache.getIfPresent(player.getUniqueId());
     }
 
+    private File getPlayerDataFile(UUID playerId) {
+        return new File(playerDataFolder, playerId + ".dat");
+    }
+
     private boolean createNewEmptyData(UUID playerId) {
-        File playerDat = new File(playerDataFolder, playerId + ".dat");
+        File playerDat = getPlayerDataFile(playerId);
         if (playerDat.exists()) {
             return false;
         }
