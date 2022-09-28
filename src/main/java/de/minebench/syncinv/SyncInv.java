@@ -24,6 +24,9 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.Attribute;
@@ -356,6 +359,22 @@ public final class SyncInv extends JavaPlugin {
                 getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
                 disableSync(SyncType.MAPS);
             }
+        }
+
+        // Make sure the world "world" exists so that we can store unknown players without issues
+        if (storeUnknownPlayers && getServer().getWorld("world") == null && getConfig().getBoolean("create-world")) {
+            getLogger().log(Level.INFO, "No world with the name 'world' exists while 'store-unknown-players' is enabled. This world is needed for that functionality to work correctly, creating it... (can be disabled with 'create-world' in the config)");
+            World world = getServer().createWorld(new WorldCreator("world")
+                    .type(WorldType.FLAT)
+                    .generateStructures(false));
+            world.setAutoSave(false);
+            world.setViewDistance(0);
+            world.setKeepSpawnInMemory(false);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+            world.setGameRule(GameRule.DO_FIRE_TICK, false);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            world.setGameRule(GameRule.DISABLE_RAIDS, true);
         }
     }
 
@@ -835,13 +854,10 @@ public final class SyncInv extends JavaPlugin {
         if (playerDat.exists()) {
             return false;
         }
-        File emptyFile = new File(getDataFolder(), "empty.dat");
-        if (!emptyFile.exists()) {
-            saveResource(emptyFile.getName(), false);
-        }
         
         try {
-            Files.copy(emptyFile.toPath(), playerDat.toPath());
+            playerDat.getParentFile().mkdirs();
+            Files.copy(getResource("empty.dat"), playerDat.toPath());
             return true;
         } catch (IOException e) {
             logDebug("Error while trying to create file for unknown player " + playerId + ": " + e.getMessage());

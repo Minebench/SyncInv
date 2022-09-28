@@ -38,6 +38,10 @@ sync-with-group-on-logout: true
 # breaks first join detection of other plugins
 store-unknown-players: true
 
+# Whether to create a missing 'world' world which is required
+# for unknown player storage to work
+create-world: true
+
 # The amount of seconds we should maximally wait for all servers to
 # respond to a query
 query-timeout: 5
