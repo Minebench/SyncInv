@@ -368,7 +368,7 @@ public final class SyncInv extends JavaPlugin {
                     .type(WorldType.FLAT)
                     .generateStructures(false));
             world.setAutoSave(false);
-            world.setViewDistance(0);
+            world.setViewDistance(2);
             world.setKeepSpawnInMemory(false);
             world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
             world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
