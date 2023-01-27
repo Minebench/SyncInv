@@ -3,12 +3,14 @@ package de.minebench.syncinv.listeners;
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 
 import java.util.Map;
 
@@ -49,6 +51,28 @@ public class PlayerJoinListener implements Listener {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 e.setKickMessage(ChatColor.RED + "Unable to query player data!");
                 return;
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerLogin(PlayerLoginEvent e) {
+        // Event will have pre-cancelled result set for whitelist/banlist
+        if (e.getResult() == PlayerLoginEvent.Result.ALLOWED) {
+            // Sync login listener for sanity checking as we don't want to allow the player to exist twice
+            Entity entity = plugin.getServer().getEntity(e.getPlayer().getUniqueId());
+            if (entity instanceof Player) {
+                e.setResult(PlayerLoginEvent.Result.KICK_OTHER);
+                e.setKickMessage(ChatColor.RED + "A player with your UUID already exists!");
+                plugin.logDebug("A player object with the same UUID " + e.getPlayer().getUniqueId() + " already exists on the server.");
+                // Kick player. This should do nothing if it's not a real one (e.g. one loaded by OpenInv)
+                // Removal of such players is up to OpenInv itself
+                ((Player) entity).kickPlayer("Login from different location.");
+            } else if (entity != null) {
+                // Well... this is weird. An entity with the same UUID as the player's exists?!? Removing it just to be sure...
+                plugin.getLogger().info("A " + entity + " with the same UUID " + e.getPlayer().getUniqueId()
+                        + " as the player login in existed on the server at " + entity.getLocation() + "... removing it!");
+                entity.remove();
             }
         }
     }
