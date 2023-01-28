@@ -52,7 +52,7 @@ public class MapCreationListener implements Listener {
         if (event.getInventory().getResult() != null && event.getInventory().getResult().getType() == Material.FILLED_MAP && event.getInventory().getResult().getAmount() != 2) {
             plugin.logDebug(event.getView().getPlayer() + " is trying to scale a map!");
             for (ItemStack item : event.getInventory().getMatrix()) {
-                if (item.getType() == Material.FILLED_MAP) {
+                if (item != null && item.getType() == Material.FILLED_MAP) {
                     MapMeta meta = (MapMeta) item.getItemMeta();
                     MapView map = meta.getMapView();
                     UUID mapId = plugin.getWorldId(map);
