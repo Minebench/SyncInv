@@ -275,10 +275,10 @@ public final class SyncInv extends JavaPlugin {
     @Override
     public void onDisable() {
         disabling = true;
-        for (Player player : getServer().getOnlinePlayers()) {
-            getMessenger().sendGroupMessage(new Message(getMessenger().getServerName(), MessageType.DATA, getData(player)), true);
-        }
         if (getMessenger() != null) {
+            for (Player player : getServer().getOnlinePlayers()) {
+                getMessenger().sendGroupMessage(new Message(getMessenger().getServerName(), MessageType.DATA, getData(player)), true);
+            }
             getMessenger().goodbye();
         }
     }
