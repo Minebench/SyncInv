@@ -218,8 +218,8 @@ public abstract class ServerMessenger {
                     playerId = (UUID) message.read();
                     query = queries.get(playerId);
                     if (query != null) {
-                        plugin.logDebug("Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                         lastSeen = (long) message.read();
+                        plugin.logDebug("Received " + message.getType() + " " + lastSeen + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                         query.addResponse(message.getSender(), lastSeen);
 
                         if (isCompleted(query)) { // All known servers responded
