@@ -210,23 +210,21 @@ public final class SyncInv extends JavaPlugin {
                             OfflinePlayer offlinePlayer = openInv.matchPlayer(args[0]);
                             if (offlinePlayer != null && (offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())) {
                                 PlayerDataQuery q = getMessenger().queryData(offlinePlayer.getUniqueId(), (query) -> {
-                                    getServer().getScheduler().runTask(this, () -> {
-                                        if (getServer().getPlayer(query.getPlayerId()) != null) {
-                                            openInvCommand.onCommand(sender, command, label, args);
-                                            return;
-                                        }
-                                        getMessenger().removeQuery(query.getPlayerId());
-                                        if (!((Player) sender).isOnline()) {
-                                            return;
-                                        }
-                                        if (query.getYoungestServer() == null) {
-                                            openInvCommand.onCommand(sender, command, label, args);
-                                        } else {
-                                            sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
-                                                    + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
-                                            connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
-                                        }
-                                    });
+                                    if (getServer().getPlayer(query.getPlayerId()) != null) {
+                                        openInvCommand.onCommand(sender, command, label, args);
+                                        return;
+                                    }
+                                    getMessenger().removeQuery(query.getPlayerId());
+                                    if (!((Player) sender).isOnline()) {
+                                        return;
+                                    }
+                                    if (query.getYoungestServer() == null) {
+                                        openInvCommand.onCommand(sender, command, label, args);
+                                    } else {
+                                        sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
+                                                + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
+                                        connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
+                                    }
                                 });
                                 if (q == null) {
                                     sender.sendMessage(ChatColor.RED + "Could not query information from other servers! Take a look at the log for more details.");

@@ -78,7 +78,8 @@ public class RedisMessenger extends ServerMessenger {
                     return;
                 }
                 try {
-                    onMessage(channel.substring(CHANNEL_PREFIX.length() + VERSION_PREFIX.length()), Message.fromByteArray(bytes));
+                    Message message = Message.fromByteArray(bytes);
+                    plugin.runSync(() -> onMessage(channel.substring(CHANNEL_PREFIX.length() + VERSION_PREFIX.length()), message));
                 } catch (IOException | ClassNotFoundException | IllegalArgumentException | InvalidConfigurationException e) {
                     plugin.getLogger().log(Level.SEVERE, "Error while decoding message on " + channel + " redis channel! ", e);
                 } catch (VersionMismatchException e) {
