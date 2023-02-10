@@ -124,6 +124,8 @@ public abstract class ServerMessenger {
                 return;
             }
 
+            plugin.logDebug(playerId + " was last seen on this server at " + query.getLocalLastSeen());
+
             String youngestServer = query.getYoungestServer();
             if (youngestServer == null) { // This is the youngest server
                 queries.remove(query.getPlayerId()); // Let the player play
