@@ -245,7 +245,11 @@ public abstract class ServerMessenger {
                         if (offlinePlayer.hasPlayedBefore()) {
                             Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
                             if (p != null) {
-                                sendMessage(message.getSender(), MessageType.DATA, plugin.getData(p));
+                                plugin.getOpenInv().retainPlayer(p, plugin);
+                                PlayerData data = plugin.getData(p);
+                                plugin.getOpenInv().releasePlayer(p, plugin);
+                                plugin.getOpenInv().unload(p);
+                                sendMessage(message.getSender(), MessageType.DATA, data);
                             } else {
                                 sendMessage(message.getSender(), MessageType.CANT_GET_DATA, playerId); // Tell the sender that we can't load the data
                             }
