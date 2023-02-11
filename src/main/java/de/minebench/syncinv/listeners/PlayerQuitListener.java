@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Set;
+import java.util.UUID;
 
 /*
  * SyncInv
@@ -52,6 +53,8 @@ public class PlayerQuitListener implements Listener {
                 }
             }, 1);
             return;
+        } else {
+            plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis());
         }
 
 
