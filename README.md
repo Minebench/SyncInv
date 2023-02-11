@@ -5,6 +5,7 @@ Provided without any (implied) support nor warranty! (See [GPLv3 license](https:
 
 ## Requirements
 
+- At least Java 11
 - [Paper](https://papermc.io) Minecraft server software (tested on 1.16.5+, should be the same version on all synced servers)
 - [redis](https://redis.io) pub-sub
 - [OpenInv](https://github.com/jikoo/OpenInv) (optionally, for a more smooth experience)

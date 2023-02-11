@@ -46,7 +46,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.EnumSet;
@@ -424,6 +427,18 @@ public final class SyncInv extends JavaPlugin {
                 return System.currentTimeMillis();
             }
         }
+        // Check if lastseen file exists, if so use it
+        File lastSeen = getPlayerLastSeenFile(playerId);
+        if (lastSeen.exists()) {
+            try {
+                String lastSeenString = Files.readString(lastSeen.toPath());
+                logDebug("Lastseen file existed for " + playerId + "! (" + lastSeenString + ")");
+                return Long.parseLong(lastSeenString);
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Error while reading last seen file for " + playerId + "!", e);
+                return 0;
+            }
+        }
         File playerDat = getPlayerDataFile(playerId);
         return playerDat.lastModified();
     }
@@ -437,7 +452,31 @@ public final class SyncInv extends JavaPlugin {
      */
     public boolean setLastSeen(UUID playerId, long timeStamp) {
         File playerDat = getPlayerDataFile(playerId);
-        return playerDat.exists() && playerDat.setLastModified(timeStamp);
+        if (playerDat.exists()) {
+            File lastSeen = getPlayerLastSeenFile(playerId);
+            if (playerDat.setLastModified(timeStamp)) {
+                if (playerDat.lastModified() == timeStamp) {
+                    // Delete old last seen file if it existed
+                    if (!lastSeen.exists() || lastSeen.delete()) {
+                        return true;
+                    }
+                    logDebug("Unable to remove old last seen file for " + playerId + "?");
+                }
+                logDebug("Set last seen of " + playerId + " to " + timeStamp + " but it didn't work? Using workaround...");
+            } else {
+                logDebug("Unable to set last seen of " + playerId + " to " + timeStamp + "! Using workaround...");
+            }
+            // Workaround for systems that don't allow modifying the dat directly
+            try {
+                Files.write(lastSeen.toPath(), String.valueOf(timeStamp).getBytes(StandardCharsets.UTF_8));
+                return true;
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Unable to store lastseen file for " + playerId, e);
+            }
+        } else {
+            logDebug("Tried to set last seen of " + playerId + " to " + timeStamp + " but they had no player file stored?");
+        }
+        return false;
     }
 
     /**
@@ -818,7 +857,7 @@ public final class SyncInv extends JavaPlugin {
                         playerDat.delete();
                     } else if (playerDat.lastModified() >= data.getLastSeen()) {
                         // Failed to apply data, make sure our locally stored data is older than the newest
-                        playerDat.setLastModified(data.getLastSeen() - 1);
+                        setLastSeen(data.getPlayerId(), data.getLastSeen() - 1);
                     }
                 }
             } finally {
@@ -845,6 +884,10 @@ public final class SyncInv extends JavaPlugin {
 
     private File getPlayerDataFile(UUID playerId) {
         return new File(playerDataFolder, playerId + ".dat");
+    }
+
+    private File getPlayerLastSeenFile(UUID playerId) {
+        return new File(playerDataFolder, playerId + ".lastseen");
     }
 
     private boolean createNewEmptyData(UUID playerId) {
