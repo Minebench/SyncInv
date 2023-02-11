@@ -53,8 +53,6 @@ public class PlayerQuitListener implements Listener {
                 }
             }, 1);
             return;
-        } else {
-            plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis());
         }
 
 
@@ -67,6 +65,7 @@ public class PlayerQuitListener implements Listener {
                 plugin.getMessenger().fulfillQueuedDataRequest(data);
             }
         }
+        plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis());
     }
 
 }
