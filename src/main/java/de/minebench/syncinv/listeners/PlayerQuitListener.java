@@ -65,7 +65,8 @@ public class PlayerQuitListener implements Listener {
                 plugin.getMessenger().fulfillQueuedDataRequest(data);
             }
         }
-        plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        // Update last seen
+        plugin.runLater(() -> plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis()), 1);
     }
 
 }
