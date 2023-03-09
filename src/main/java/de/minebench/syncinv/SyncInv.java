@@ -650,6 +650,8 @@ public final class SyncInv extends JavaPlugin {
                             player.sendMap(map);
                         } catch (IllegalAccessException e) {
                             getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
+                        } catch (Exception e) {
+                            getLogger().log(Level.SEVERE, "Error while trying to store map " + mapData.getId() + "! ", e);
                         }
                     }
                 }
@@ -1047,14 +1049,18 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Make sure that we have maps with that id
-     * @param id
+     * @param id The map's numeric id
      */
     public void checkMap(int id) {
         setNewestMap(id);
         logDebug("Checking map " + id);
-        while (getServer().getMap(id) == null) {
-            MapView map = getServer().createMap(getServer().getWorlds().get(0));
-            logDebug("Created map " + map.getId());
+        try {
+            while (getServer().getMap(id) == null) {
+                MapView map = getServer().createMap(getServer().getWorlds().get(0));
+                logDebug("Created map " + map.getId());
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error while trying to check map " + id + ". It might be corrupted!", e);
         }
     }
 
