@@ -552,8 +552,7 @@ public final class SyncInv extends JavaPlugin {
                 player = getOpenInv().loadPlayer(offlinePlayer);
                 if (player == null) {
                     logDebug("Unable to load player " + offlinePlayer.getName() + "/" + offlinePlayer.getUniqueId() + " data with OpenInv");
-                }
-                if (createdNewFile) {
+                } else if (createdNewFile) {
                     try {
                         if (methodGetHandle == null) {
                             methodGetHandle = player.getClass().getMethod("getHandle");
@@ -593,7 +592,6 @@ public final class SyncInv extends JavaPlugin {
                         getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
                         storeUnknownPlayers = false;
                         player = null;
-                        getPlayerDataFile(data.getPlayerId()).delete();
                         getOpenInv().unload(offlinePlayer);
                     }
                 }
@@ -601,6 +599,9 @@ public final class SyncInv extends JavaPlugin {
             if (player == null) {
                 logDebug("Could not apply data for player " + data.getPlayerId() + " as he isn't online and "
                         + (getOpenInv() == null ? "this server doesn't have OpenInv installed!" : "never was online on this server before!"));
+                if (createdNewFile) {
+                    getPlayerDataFile(data.getPlayerId()).delete();
+                }
                 return;
             }
             if (getOpenInv() != null && !player.isOnline()) {
