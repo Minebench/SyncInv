@@ -35,11 +35,14 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.map.MapCanvas;
+import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,8 +51,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.EnumSet;
@@ -347,7 +348,15 @@ public final class SyncInv extends JavaPlugin {
                 try {
                     fieldMapColor = worldMap.getClass().getField("g");
                 } catch (NoSuchFieldException e) {
-                    fieldMapColor = worldMap.getClass().getField("colors");
+                    try {
+                        fieldMapColor = worldMap.getClass().getField("colors");
+                    } catch (NoSuchFieldException e1) {
+                        for (Field field : worldMap.getClass().getFields()) {
+                            if (field.getType() == byte[].class) {
+                                fieldMapColor = field;
+                            }
+                        }
+                    }
                 }
                 fieldMapWorldId = worldMap.getClass().getDeclaredField("uniqueId");
                 fieldMapWorldId.setAccessible(true);
@@ -638,17 +647,22 @@ public final class SyncInv extends JavaPlugin {
                         try {
                             logDebug("Writing data of map " + mapData.getId());
                             MapView map = getServer().getMap(mapData.getId());
-                            Object worldMap = fieldWorldMap.get(map);
-                            map.setCenterX(mapData.getCenterX());
-                            map.setCenterZ(mapData.getCenterZ());
-                            map.setScale(mapData.getScale());
-                            fieldMapColor.set(worldMap, mapData.getColors());
+                            if (map != null) {
+                                Object worldMap = fieldWorldMap.get(map);
+                                map.setCenterX(mapData.getCenterX());
+                                map.setCenterZ(mapData.getCenterZ());
+                                map.setScale(mapData.getScale());
+                                fieldMapColor.set(worldMap, mapData.getColors());
 
-                            if (getServer().getWorld(mapData.getWorldId()) != null) {
-                                map.setWorld(getServer().getWorld(mapData.getWorldId()));
+                                World world = getServer().getWorld(mapData.getWorldId());
+                                if (world != null) {
+                                    map.setWorld(world);
+                                }
+                                fieldMapWorldId.set(worldMap, mapData.getWorldId()); // plugin API doesn't change UUID on world set so set it always
+                                // Workaround for map not showing directly after creating it
+                                forceRender(map);
+                                player.sendMap(map);
                             }
-                            fieldMapWorldId.set(worldMap, mapData.getWorldId()); // plugin API doesn't change UUID on world set so set it always
-                            player.sendMap(map);
                         } catch (IllegalAccessException e) {
                             getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + mapData.getId() + "! ", e);
                         } catch (Exception e) {
@@ -870,6 +884,21 @@ public final class SyncInv extends JavaPlugin {
                 }
             }
         });
+    }
+
+    /**
+     * Force a rerender of the map. This is done by adding an empty custom renderer above the vanilla one.
+     * @param map The MapView
+     */
+    private void forceRender(MapView map) {
+        map.addRenderer(new EmptyRenderer());
+    }
+
+    private static class EmptyRenderer extends MapRenderer {
+        @Override
+        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+
+        }
     }
 
     private void cacheData(PlayerData data, Runnable finished) {
