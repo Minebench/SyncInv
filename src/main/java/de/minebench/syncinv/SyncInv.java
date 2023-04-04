@@ -653,6 +653,12 @@ public final class SyncInv extends JavaPlugin {
                                 map.setCenterZ(mapData.getCenterZ());
                                 map.setScale(mapData.getScale());
                                 fieldMapColor.set(worldMap, mapData.getColors());
+                                try {
+                                    // Newer map info
+                                    map.setLocked(mapData.isLocked());
+                                    map.setTrackingPosition(mapData.isTrackingPosition());
+                                    map.setUnlimitedTracking(mapData.isUnlimitedTracking());
+                                } catch (NoSuchMethodError ignored) {}
 
                                 World world = getServer().getWorld(mapData.getWorldId());
                                 if (world != null) {
@@ -1041,14 +1047,21 @@ public final class SyncInv extends JavaPlugin {
                         continue;
                     }
 
-                    data.getMaps().add(new MapData(
+                    MapData mapData = new MapData(
                             map.getId(),
                             worldId,
                             map.getCenterX(),
                             map.getCenterZ(),
                             map.getScale(),
                             colors
-                    ));
+                    );
+                    try {
+                        // Newer map info
+                        mapData.setLocked(map.isLocked());
+                        mapData.setTrackingPosition(map.isTrackingPosition());
+                        mapData.setUnlimitedTracking(map.isUnlimitedTracking());
+                    } catch (NoSuchMethodError ignored) {}
+                    data.getMaps().add(mapData);
                 } catch (IllegalAccessException e) {
                     getLogger().log(Level.SEVERE, "Could not access field in WorldMap class for " + map.getId() + "! ", e);
                 }
