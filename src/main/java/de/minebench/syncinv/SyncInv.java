@@ -948,14 +948,16 @@ public final class SyncInv extends JavaPlugin {
         PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
         if (shouldSync(SyncType.PERSISTENT_DATA)) {
+            Object serializedPdc = null;
             try {
                 PersistentDataContainer pdc = player.getPersistentDataContainer();
                 if (methodPdcSerialize == null) {
                     methodPdcSerialize = pdc.getClass().getMethod("serialize");
                 }
-                data.setPersistentData((Map<String, Object>) methodPdcSerialize.invoke(pdc));
+                serializedPdc = methodPdcSerialize.invoke(pdc);
+                data.setPersistentData((Map<String, Object>) serializedPdc);
             } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data. Disabling persistent data syncing!", e);
+                getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data (" + serializedPdc + "). Disabling persistent data syncing!", e);
                 disableSync(SyncType.PERSISTENT_DATA);
             }
         }
