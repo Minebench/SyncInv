@@ -171,7 +171,7 @@ public abstract class ServerMessenger {
         long lastSeen = plugin.getLastSeen(playerId, false);
         PlayerDataQuery query = new PlayerDataQuery(playerId, lastSeen, onComplete);
         query.setTimeoutTask(plugin.runLater(() -> completeQuery(query), 20 * plugin.getQueryTimeout()));
-        queries.put(playerId, query);
+        addQuery(playerId, query);
 
         sendGroupMessage(MessageType.GET_LAST_SEEN, playerId);
 
@@ -409,6 +409,22 @@ public abstract class ServerMessenger {
      */
     public PlayerDataQuery getQuery(UUID playerId) {
         return queries.get(playerId);
+    }
+
+    /**
+     * Add a query for a player
+     * @param playerId The UUID of the player
+     * @param query    The query to add
+     * @return         The previous PlayerDataQuery if there was one
+     */
+    public PlayerDataQuery addQuery(UUID playerId, PlayerDataQuery query) {
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player != null && player.getOpenInventory().getCursor() != null) {
+            // add item on cursor to inventory to prevent it from being lost
+            player.getInventory().addItem(player.getOpenInventory().getCursor().clone());
+            player.getOpenInventory().setCursor(null);
+        }
+        return queries.put(playerId, query);
     }
 
     /**
