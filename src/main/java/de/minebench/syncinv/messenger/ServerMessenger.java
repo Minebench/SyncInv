@@ -150,7 +150,7 @@ public abstract class ServerMessenger {
      * Query the data of a player
      * @param playerId      The UUID of the player
      * @param onComplete    Handle the player data when all we have all information from the other servers
-     * @return The new PlayerDataQuery object or null if one was already started
+     * @return The PlayerDataQuery object, either a new one or the existing one. null if we are unable to query.
      */
     public PlayerDataQuery queryData(UUID playerId, Consumer<PlayerDataQuery> onComplete) {
         if (isAlone()) {
@@ -165,7 +165,7 @@ public abstract class ServerMessenger {
 
         if (queries.get(playerId) != null) {
             plugin.logDebug("Already querying data of " + playerId);
-            return null;
+            return queries.get(playerId);
         }
 
         long lastSeen = plugin.getLastSeen(playerId, false);
