@@ -715,19 +715,8 @@ public final class SyncInv extends JavaPlugin {
                 if (shouldSync(SyncType.PERSISTENT_DATA) && data.getPersistentData() != null) {
                     try {
                         PersistentDataContainer pdc = player.getPersistentDataContainer();
-                        if (methodGetRaw == null) {
-                            methodGetRaw = pdc.getClass().getMethod("getRaw");
-                        }
-                        Map<String, ?> raw = (Map<String, ?>) methodGetRaw.invoke(pdc);
-                        raw.entrySet().removeIf(e -> !data.getPersistentData().containsKey(e.getKey()));
-
-                        if (methodPutAll == null) {
-                            Method toTagCompound = pdc.getClass().getMethod("toTagCompound");
-                            Object tagCompound = toTagCompound.invoke(pdc);
-                            methodPutAll = pdc.getClass().getMethod("putAll", tagCompound.getClass());
-                        }
-                        methodPutAll.invoke(pdc, methodDeserializeCompound.invoke(null, data.getPersistentData()));
-                    } catch (ClassCastException | NoSuchMethodException e) {
+                        pdc.readFromBytes(data.getPersistentData(), true);
+                    } catch (IOException e) {
                         getLogger().log(Level.WARNING, "Error while trying to write PersistentDataContainer data. Disabling persistent data syncing!", e);
                         disableSync(SyncType.PERSISTENT_DATA);
                     }
@@ -948,16 +937,11 @@ public final class SyncInv extends JavaPlugin {
         PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
         if (shouldSync(SyncType.PERSISTENT_DATA)) {
-            Object serializedPdc = null;
+            PersistentDataContainer pdc = player.getPersistentDataContainer();
             try {
-                PersistentDataContainer pdc = player.getPersistentDataContainer();
-                if (methodPdcSerialize == null) {
-                    methodPdcSerialize = pdc.getClass().getMethod("serialize");
-                }
-                serializedPdc = methodPdcSerialize.invoke(pdc);
-                data.setPersistentData((Map<String, Object>) serializedPdc);
-            } catch (ClassCastException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data (" + serializedPdc + "). Disabling persistent data syncing!", e);
+                data.setPersistentData(pdc.serializeToBytes());
+            } catch (IOException e) {
+                getLogger().log(Level.WARNING, "Error while trying to access PersistentDataContainer data (" + pdc + "). Disabling persistent data syncing!", e);
                 disableSync(SyncType.PERSISTENT_DATA);
             }
         }
