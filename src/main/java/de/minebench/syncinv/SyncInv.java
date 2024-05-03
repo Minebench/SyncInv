@@ -11,22 +11,13 @@ import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
-import de.minebench.syncinv.messenger.Message;
-import de.minebench.syncinv.messenger.MessageType;
-import de.minebench.syncinv.messenger.PlayerDataQuery;
-import de.minebench.syncinv.messenger.RedisMessenger;
-import de.minebench.syncinv.messenger.ServerMessenger;
+import de.minebench.syncinv.messenger.*;
 import lombok.Getter;
-import org.bukkit.ChatColor;
-import org.bukkit.GameRule;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Sound;
-import org.bukkit.Statistic;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.WorldType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.Attribute;
@@ -49,15 +40,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.AbstractMap;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -225,16 +209,16 @@ public final class SyncInv extends JavaPlugin {
                                     if (query.getYoungestServer() == null) {
                                         openInvCommand.onCommand(sender, command, label, args);
                                     } else {
-                                        sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
-                                                + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
+                                        sender.sendMessage(Component.text("Current server does not have newest player data! ", NamedTextColor.RED).
+                                                append(Component.text("Connecting to server " + query.getYoungestServer() + " which has the newest data...", NamedTextColor.GRAY)));
                                         connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
                                     }
                                 });
                                 if (q == null) {
-                                    sender.sendMessage(ChatColor.RED + "Could not query information from other servers! Take a look at the log for more details.");
+                                    sender.sendMessage(Component.text("Could not query information from other servers! Take a look at the log for more details.", NamedTextColor.RED));
                                 }
                             } else {
-                                sender.sendMessage(ChatColor.RED + "Player not found!");
+                                sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
                             }
                         });
                         return true;
@@ -388,11 +372,11 @@ public final class SyncInv extends JavaPlugin {
         }
     }
 
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String @NotNull[] args) {
         if (args.length > 0) {
             if ("reload".equalsIgnoreCase(args[0]) && sender.hasPermission("syncing.command.reload")) {
                 loadConfig();
-                sender.sendMessage(ChatColor.YELLOW + "Config reloaded!");
+                sender.sendMessage(Component.text("Config reloaded!", NamedTextColor.YELLOW));
                 return true;
             }
         }
@@ -402,19 +386,16 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Get a language message from the config and replace variables in it
      * @param key The key of the message (lang.<key>)
-     * @param replacements An array of variables to be replaced with certain strings in the format [var,repl,var,repl,...]
+     * @param replacements An array of TagResolvers to replace placeholders
      * @return The message string with colorcodes and variables replaced
      */
-    public String getLang(String key, String... replacements) {
-        String msg = ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
-        for (int i = 0; i + 1 < replacements.length; i += 2) {
-            msg = msg.replace("%" + replacements[i] + "%", replacements[i+1]);
-        }
-        return msg;
+    public Component getLang(String key, TagResolver... replacements) {
+        String rawMsg = getConfig().getString("lang." + key, getName() + ": <red>Missing language key</red><gold> " + key+"</gold>");
+        return MiniMessage.miniMessage().deserialize(rawMsg, replacements);
     }
 
     /**
-     * Check whether or not the inventory etc. of a player is locked
+     * Check whether the inventory etc. of a player is locked
      * @param playerId The UUID of the player
      * @return true if it is locked; false if not
      */
@@ -477,7 +458,7 @@ public final class SyncInv extends JavaPlugin {
             }
             // Workaround for systems that don't allow modifying the dat directly
             try {
-                Files.write(lastSeen.toPath(), String.valueOf(timeStamp).getBytes(StandardCharsets.UTF_8));
+                Files.writeString(lastSeen.toPath(), String.valueOf(timeStamp));
                 return true;
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Unable to store lastseen file for " + playerId, e);
@@ -1132,7 +1113,7 @@ public final class SyncInv extends JavaPlugin {
         runSync(() -> {
             Player player = getServer().getPlayer(playerId);
             if (player != null) {
-                player.kickPlayer(getLang(key));
+                player.kick(getLang(key));
             }
         });
     }
