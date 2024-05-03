@@ -546,62 +546,72 @@ public final class SyncInv extends JavaPlugin {
                 logDebug("Player " + data.getPlayerId() + " has query but was not fully online yet! Caching data...");
                 return;
             }
-            if (getOpenInv() != null && player == null) {
-                OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
-                if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
-                    if (offlinePlayer.getName() == null) {
+            if (getOpenInv() != null) {
+                if (player == null) {
+                    OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
+                    if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
+                        if (offlinePlayer.getName() == null) {
+                            try {
+                                offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), data.getPlayerName()));
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                logDebug("Could not create offline player for " + data.getPlayerId() + "! " + e.getMessage());
+                            }
+                        }
+                        createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
+                    }
+                    player = getOpenInv().loadPlayer(offlinePlayer);
+                    if (player == null) {
+                        logDebug("Unable to load player " + offlinePlayer.getName() + "/" + offlinePlayer.getUniqueId() + " data with OpenInv");
+                    } else if (createdNewFile) {
                         try {
-                            offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), data.getPlayerName()));
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            logDebug("Could not create offline player for " + data.getPlayerId() + "! " + e.getMessage());
+                            if (methodGetHandle == null) {
+                                methodGetHandle = player.getClass().getMethod("getHandle");
+                            }
+                            Object entity = methodGetHandle.invoke(player);
+                            if (methodSetPositionRaw == null || (fieldYaw == null && methodSetYaw == null) || (fieldPitch == null || methodSetPitch == null)) {
+                                try {
+                                    // should be the "go-to" since 1.20.5+ for paper
+                                    methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
+                                } catch (NoSuchMethodException e) {
+                                    // TODO: Better obfuscation support <-- use paper's userDev
+                                    // 1.18-1.18.2 was "e", would become "o" until 1.19.2 and is now (1.20.6 when not Moj-Mapped) "p"
+                                    methodSetPositionRaw = entity.getClass().getMethod("p", double.class, double.class, double.class);
+                                }
+                                try {
+                                    fieldYaw = entity.getClass().getField("yaw");
+                                    fieldPitch = entity.getClass().getField("pitch");
+                                } catch (NoSuchFieldException e) {
+                                    try {
+                                        methodSetYaw = entity.getClass().getMethod("setYRot", float.class);
+                                        methodSetPitch = entity.getClass().getMethod("setYRot", float.class);
+                                    } catch (NoSuchMethodException ignored) {}
+                                }
+                            }
+                            Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
+                            methodSetPositionRaw.invoke(entity, spawn.getX(), spawn.getY(), spawn.getZ());
+                            if (fieldYaw != null) {
+                                fieldYaw.set(entity, spawn.getYaw());
+                            } else if (methodSetYaw != null) {
+                                methodSetYaw.invoke(entity, spawn.getYaw());
+                            }
+                            if (fieldPitch != null) {
+                                fieldPitch.set(entity, spawn.getPitch());
+                            } else if (methodSetPitch != null) {
+                                methodSetPitch.invoke(entity, spawn.getPitch());
+                            }
+                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                            getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
+                            storeUnknownPlayers = false;
+                            player = null;
+                            getOpenInv().unload(offlinePlayer);
                         }
                     }
-                    createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
-                }
-                player = getOpenInv().loadPlayer(offlinePlayer);
-                if (player == null) {
-                    logDebug("Unable to load player " + offlinePlayer.getName() + "/" + offlinePlayer.getUniqueId() + " data with OpenInv");
-                } else if (createdNewFile) {
-                    try {
-                        if (methodGetHandle == null) {
-                            methodGetHandle = player.getClass().getMethod("getHandle");
-                        }
-                        Object entity = methodGetHandle.invoke(player);
-                        if (methodSetPositionRaw == null || (fieldYaw == null && methodSetYaw == null) || (fieldPitch == null || methodSetPitch == null)) {
-                            try {
-                                methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
-                            } catch (NoSuchMethodException e) {
-                                // TODO: Better obfuscation support
-                                // 1.18-1.18.2
-                                methodSetPositionRaw = entity.getClass().getMethod("e", double.class, double.class, double.class);
-                            }
-                            try {
-                                fieldYaw = entity.getClass().getField("yaw");
-                                fieldPitch = entity.getClass().getField("pitch");
-                            } catch (NoSuchFieldException e) {
-                                try {
-                                    methodSetYaw = entity.getClass().getMethod("setYRot", float.class);
-                                    methodSetPitch = entity.getClass().getMethod("setYRot", float.class);
-                                } catch (NoSuchMethodException ignored) {}
-                            }
-                        }
-                        Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
-                        methodSetPositionRaw.invoke(entity, spawn.getX(), spawn.getY(), spawn.getZ());
-                        if (fieldYaw != null) {
-                            fieldYaw.set(entity, spawn.getYaw());
-                        } else if (methodSetYaw != null) {
-                            methodSetYaw.invoke(entity, spawn.getYaw());
-                        }
-                        if (fieldPitch != null) {
-                            fieldPitch.set(entity, spawn.getPitch());
-                        } else if (methodSetPitch != null) {
-                            methodSetPitch.invoke(entity, spawn.getPitch());
-                        }
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
-                        storeUnknownPlayers = false;
-                        player = null;
-                        getOpenInv().unload(offlinePlayer);
+                } else if (!getOpenInv().disableSaving() && getOpenInv().isPlayerLoaded(player.getUniqueId())) {
+                    Player openInvLoadedPlayer = getOpenInv().loadPlayer(player);
+
+                    if (openInvLoadedPlayer != null && openInvLoadedPlayer != player) {
+                        // The copy loaded by OpenInv is not the same as our loaded copy. Use theirs to stay in sync
+                        player = openInvLoadedPlayer;
                     }
                 }
             }
@@ -613,9 +623,7 @@ public final class SyncInv extends JavaPlugin {
                 }
                 return;
             }
-            if (getOpenInv() != null && !player.isOnline()) {
-                getOpenInv().retainPlayer(player, this);
-            }
+
             try {
                 if (shouldSync(SyncType.EXPERIENCE)) {
                     player.setTotalExperience(0);
@@ -874,7 +882,6 @@ public final class SyncInv extends JavaPlugin {
                 }
             } finally {
                 if (getOpenInv() != null) {
-                    getOpenInv().releasePlayer(player, this);
                     getOpenInv().unload(player);
                 }
             }
@@ -922,7 +929,7 @@ public final class SyncInv extends JavaPlugin {
         if (playerDat.exists()) {
             return false;
         }
-        
+
         try {
             playerDat.getParentFile().mkdirs();
             Files.copy(getResource("empty.dat"), playerDat.toPath());
@@ -932,7 +939,7 @@ public final class SyncInv extends JavaPlugin {
         }
         return false;
     }
-    
+
     public PlayerData getData(Player player) {
         PlayerData data = new PlayerData(player, getLastSeen(player.getUniqueId(), player.isOnline()));
 
