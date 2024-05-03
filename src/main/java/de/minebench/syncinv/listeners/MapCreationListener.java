@@ -2,7 +2,6 @@ package de.minebench.syncinv.listeners;
 
 import de.minebench.syncinv.SyncInv;
 import de.minebench.syncinv.SyncType;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.EventHandler;
@@ -60,7 +59,7 @@ public class MapCreationListener implements Listener {
                         plugin.logDebug(event.getView().getPlayer().getName() + " is not on the world that map " + map.getId() + " is from! (" + mapId + ")");
                         event.getInventory().setResult(null);
                         for (HumanEntity viewer : event.getViewers()) {
-                            viewer.sendMessage(ChatColor.RED + "Please switch to the world where this map was created to scale it!");
+                            viewer.sendMessage(plugin.getLang("map-scale-wrong-world"));
                         }
                         break;
                     }
