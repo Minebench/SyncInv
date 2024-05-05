@@ -11,8 +11,8 @@ import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerConnectionValidateLoginListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
-import de.minebench.syncinv.listeners.PlayerLoginListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
+import de.minebench.syncinv.listeners.PlayerLoginListener;
 import de.minebench.syncinv.messenger.Message;
 import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.PlayerDataQuery;
@@ -50,7 +50,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.AbstractMap;
 import java.util.Date;
@@ -177,8 +176,8 @@ public final class SyncInv extends JavaPlugin {
         loadConfig();
 
         playerDataFolder = getServer().getMinecraftVersion().startsWith("1.")
-                ? new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata")
-                : new File(new File(getServer().getWorlds().get(0).getWorldFolder(), "players"), "data");
+            ? new File(getServer().getWorlds().getFirst().getWorldFolder(), "playerdata")
+            : new File(new File(getServer().getWorlds().getFirst().getWorldFolder(), "players"), "data");
 
         MethodHandle tempUUIDGetterHandle = null;
         try {
@@ -410,7 +409,7 @@ public final class SyncInv extends JavaPlugin {
         }
 
         if (getServer().getMap((short) 0) == null) {
-            getServer().createMap(getServer().getWorlds().get(0));
+            getServer().createMap(getServer().getWorlds().getFirst());
         }
         try {
             MapView map = null;
@@ -483,10 +482,10 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get the date when a player last logged out
-     * @param playerId  The UUID of the player
-     * @param online    Whether or not it should return the current time if the player is online
-     * @return          The timestamp of his last known data on the server in milliseconds;
-     *                  0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
+     * @param playerId The UUID of the player
+     * @param online   Whether or not it should return the current time if the player is online
+     * @return         The timestamp of his last known data on the server in milliseconds;
+     *                 0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
      */
     public long getLastSeen(UUID playerId, boolean online) {
         if (online) {
@@ -536,7 +535,7 @@ public final class SyncInv extends JavaPlugin {
             }
             // Workaround for systems that don't allow modifying the dat directly
             try {
-                Files.write(lastSeen.toPath(), String.valueOf(timeStamp).getBytes(StandardCharsets.UTF_8));
+                Files.writeString(lastSeen.toPath(), String.valueOf(timeStamp));
                 return true;
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Unable to store lastseen file for " + playerId, e);
@@ -585,7 +584,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Apply a PlayerData object to its player
-     * @param data  The data to apply
+     * @param data The data to apply
      */
     public void applyData(PlayerData data, Runnable finished) {
         if (data == null)
@@ -929,27 +928,32 @@ public final class SyncInv extends JavaPlugin {
         map.addRenderer(new EmptyRenderer());
     }
 
+    /**
+     * @return Reference to the OpenInv plugin to load data for the query option
+     */
     public OpenInv getOpenInv() {
-        return this.openInv;
+        return openInv;
     }
 
+    /**
+     * @return The messenger for communications between the servers
+     */
     public ServerMessenger getMessenger() {
-        return this.messenger;
+        return messenger;
     }
 
+    /**
+     * @return The amount of seconds we should wait for a query to stopTimeout
+     */
     public int getQueryTimeout() {
-        return this.queryTimeout;
+        return queryTimeout;
     }
 
+    /**
+     * @return The id of the newest map that was seen on this server
+     */
     public int getNewestMap() {
-        return this.newestMap;
-    }
-
-    private static class EmptyRenderer extends MapRenderer {
-        @Override
-        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
-
-        }
+        return newestMap;
     }
 
     private void cacheData(PlayerData data, Runnable finished) {
@@ -958,7 +962,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get data that was cached which should be applied on a player's login
-     * @param player    The player to get the data for
+     * @param player The player to get the data for
      * @return A cache entry containing the PlayerData and the notification Runnable when applied successfully
      */
     public Map.Entry<PlayerData, Runnable> getCachedData(Player player) {
@@ -967,7 +971,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Remove the cached data of a player
-     * @param player   The player to remove the data for
+     * @param player The player to remove the data for
      */
     public void removeCachedData(Player player) {
         playerDataCache.invalidate(player.getUniqueId());
@@ -1124,7 +1128,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param playerId  The uuid of the Player to play the sound to
+     * @param playerId The uuid of the Player to play the sound to
      */
     public void playLoadSound(UUID playerId) {
         Player player = getServer().getPlayer(playerId);
@@ -1135,7 +1139,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param player    The Player to play the sound to
+     * @param player The Player to play the sound to
      */
     public void playLoadSound(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
@@ -1150,7 +1154,7 @@ public final class SyncInv extends JavaPlugin {
         logDebug("Checking map " + id);
         try {
             while (getServer().getMap(id) == null) {
-                MapView map = getServer().createMap(getServer().getWorlds().get(0));
+                MapView map = getServer().createMap(getServer().getWorlds().getFirst());
                 logDebug("Created map " + map.getId());
             }
         } catch (Exception e) {
@@ -1234,5 +1238,11 @@ public final class SyncInv extends JavaPlugin {
     private enum FilterMode {
         DENY,
         ALLOW
+    }
+
+    private static class EmptyRenderer extends MapRenderer {
+        @Override
+        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+        }
     }
 }

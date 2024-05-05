@@ -47,7 +47,6 @@ public class PlayerJoinListener implements Listener {
             if (plugin.getMessenger().queryData(e.getUniqueId()) == null && (!plugin.getMessenger().isAllowedToBeAlone() || !plugin.getMessenger().isAlone())) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 e.setKickMessage(ChatColor.RED + "Unable to query player data!");
-                return;
             }
         }
     }

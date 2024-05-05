@@ -27,10 +27,16 @@ class VersionMismatchException extends Exception {
         this.supportedVersion = supportedVersion;
     }
 
+    /**
+     * @return get the actual version that was received
+     */
     public int getReceivedVersion() {
         return receivedVersion;
     }
 
+    /**
+     * @return get the version that is supported and was expected
+     */
     public int getSupportedVersion() {
         return supportedVersion;
     }
