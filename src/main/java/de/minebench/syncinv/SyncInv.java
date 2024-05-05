@@ -111,7 +111,7 @@ public final class SyncInv extends JavaPlugin {
      * Sync data with all servers in a group when a player logs out
      */
     private boolean syncWithGroupOnLogout;
-    
+
     /**
      * Store player data even if the player never joined the server
      */
@@ -160,7 +160,7 @@ public final class SyncInv extends JavaPlugin {
      */
     @Getter
     private int newestMap = 0;
-    
+
     // Unknown player storing
     private Method methodGetOfflinePlayer = null;
     private Method methodGetHandle = null;
@@ -184,7 +184,7 @@ public final class SyncInv extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         loadConfig();
-        
+
         playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         try {
             methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", GameProfile.class);
@@ -303,7 +303,7 @@ public final class SyncInv extends JavaPlugin {
         syncWithGroupOnLogout = getConfig().getBoolean("sync-with-group-on-logout");
 
         storeUnknownPlayers = getConfig().getBoolean("store-unknown-players");
-        
+
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
@@ -424,14 +424,14 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get a language message from the config and replace variables in it
-     * @param key The key of the message (lang.<key>)
+     * @param key          The key of the message (lang.<key>)
      * @param replacements An array of variables to be replaced with certain strings in the format [var,repl,var,repl,...]
      * @return The message string with colorcodes and variables replaced
      */
     public String getLang(String key, String... replacements) {
         String msg = ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
         for (int i = 0; i + 1 < replacements.length; i += 2) {
-            msg = msg.replace("%" + replacements[i] + "%", replacements[i+1]);
+            msg = msg.replace("%" + replacements[i] + "%", replacements[i + 1]);
         }
         return msg;
     }
@@ -535,7 +535,7 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Connect a player to a bungee server
      * @param playerId The UUID of the player
-     * @param server The name of the server
+     * @param server   The name of the server
      */
     public void connectToServer(UUID playerId, String server) {
         Player player = getServer().getPlayer(playerId);
@@ -549,7 +549,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Apply a PlayerData object to its player
-     * @param data  The data to apply
+     * @param data The data to apply
      */
     public void applyData(PlayerData data, Runnable finished) {
         if (data == null)
@@ -842,7 +842,7 @@ public final class SyncInv extends JavaPlugin {
                                     break;
                             }
                         }
-                        }
+                    }
                 }
                 if (player.isOnline()) {
                     if (shouldSync(SyncType.EFFECTS)) {
@@ -936,20 +936,13 @@ public final class SyncInv extends JavaPlugin {
         map.addRenderer(new EmptyRenderer());
     }
 
-    private static class EmptyRenderer extends MapRenderer {
-        @Override
-        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
-
-        }
-    }
-
     private void cacheData(PlayerData data, Runnable finished) {
         playerDataCache.put(data.getPlayerId(), new AbstractMap.SimpleEntry<>(data, finished));
     }
 
     /**
      * Get data that was cached which should be applied on a player's login
-     * @param player    The player to get the data for
+     * @param player The player to get the data for
      * @return A cache entry containing the PlayerData and the notification Runnable when applied successfully
      */
     public Map.Entry<PlayerData, Runnable> getCachedData(Player player) {
@@ -958,7 +951,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Remove the cached data of a player
-     * @param player   The player to remove the data for
+     * @param player The player to remove the data for
      */
     public void removeCachedData(Player player) {
         playerDataCache.invalidate(player.getUniqueId());
@@ -1114,7 +1107,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param playerId  The uuid of the Player to play the sound to
+     * @param playerId The uuid of the Player to play the sound to
      */
     public void playLoadSound(UUID playerId) {
         Player player = getServer().getPlayer(playerId);
@@ -1125,7 +1118,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param player    The Player to play the sound to
+     * @param player The Player to play the sound to
      */
     public void playLoadSound(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
@@ -1152,7 +1145,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task runs on the primary thread
      */
     public void runSync(Runnable run) {
-        if(getServer().isPrimaryThread() || disabling) {
+        if (getServer().isPrimaryThread() || disabling) {
             run.run();
         } else {
             getServer().getScheduler().runTask(this, run);
@@ -1163,7 +1156,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task does not run on the primary thread
      */
     public void runAsync(Runnable run) {
-        if(!getServer().isPrimaryThread() && !disabling) {
+        if (!getServer().isPrimaryThread() && !disabling) {
             getServer().getScheduler().runTaskAsynchronously(this, run);
         } else {
             run.run();
@@ -1219,6 +1212,11 @@ public final class SyncInv extends JavaPlugin {
             return map.getWorld().getUID();
         }
         return null;
+    }
+
+    private static class EmptyRenderer extends MapRenderer {
+        @Override
+        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {}
     }
 
     private enum FilterMode {

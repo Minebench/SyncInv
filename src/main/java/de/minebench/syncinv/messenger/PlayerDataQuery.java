@@ -1,5 +1,7 @@
 package de.minebench.syncinv.messenger;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
@@ -27,13 +29,17 @@ import java.util.function.Consumer;
 
 public class PlayerDataQuery {
     private final long timestamp = System.currentTimeMillis();
+    @Getter
     private final UUID playerId;
+    @Getter
     private final long localLastSeen;
     private final Consumer<PlayerDataQuery> onComplete;
+    @Setter
     private BukkitTask timeoutTask;
     private boolean completed = false;
 
-    private Map<String, Long> servers = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<String, Long> servers = new ConcurrentHashMap<>();
 
     public PlayerDataQuery(UUID playerId, long localLastSeen, Consumer<PlayerDataQuery> onComplete) {
         this.playerId = playerId;
@@ -41,21 +47,9 @@ public class PlayerDataQuery {
         this.onComplete = onComplete;
     }
 
-    public UUID getPlayerId() {
-        return playerId;
-    }
-
-    public long getLocalLastSeen() {
-        return localLastSeen;
-    }
-
-    public Map<String, Long> getServers() {
-        return servers;
-    }
-
     /**
      * Add a new response to this query
-     * @param server The name of the server
+     * @param server   The name of the server
      * @param lastSeen When the user was last seen on that server
      */
     public void addResponse(String server, long lastSeen) {
@@ -84,10 +78,6 @@ public class PlayerDataQuery {
      */
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimeoutTask(BukkitTask timeoutTask) {
-        this.timeoutTask = timeoutTask;
     }
 
     public void stopTimeout() {
