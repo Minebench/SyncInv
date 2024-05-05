@@ -10,7 +10,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Set;
-import java.util.UUID;
 
 /*
  * SyncInv
@@ -44,7 +43,7 @@ public class PlayerQuitListener implements Listener {
         }
         PlayerDataQuery query = plugin.getMessenger().removeQuery(event.getPlayer().getUniqueId());
         if (query != null) {
-            // The player is gone although he had a query...
+            // The player is gone, although he had a query...
             // We have to make sure now that the time of the data file matches the old one
             // and not send our data to all the other servers as it might be outdated
             plugin.runLater(() -> {
@@ -68,5 +67,4 @@ public class PlayerQuitListener implements Listener {
         // Update last seen
         plugin.runLater(() -> plugin.setLastSeen(event.getPlayer().getUniqueId(), System.currentTimeMillis()), 1);
     }
-
 }

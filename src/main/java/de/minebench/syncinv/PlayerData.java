@@ -75,10 +75,10 @@ public class PlayerData implements Serializable {
     private final float fallDistance;
     private final Vector velocity;
     private final int heldItemSlot;
-    private byte[] persistentData = null;
     private final Map<String, Map<String, Long>> advancementProgress = new HashMap<>();
     private final Table<Statistic, String, Integer> statistics = HashBasedTable.create();
     private final long lastSeen;
+    private byte[] persistentData = null;
 
     PlayerData(Player player, long lastSeen) {
         this.dataVersion = player.getServer().getUnsafe().getDataVersion();
