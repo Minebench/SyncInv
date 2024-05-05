@@ -245,11 +245,10 @@ public abstract class ServerMessenger {
                     } else if (plugin.getOpenInv() != null){
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
                         if (offlinePlayer.hasPlayedBefore()) {
+                            // we can ensure here that openInv is using the same player instance as we do and therefor it is safe to unload regardless of openinv saving it or not
                             Player p = plugin.getOpenInv().loadPlayer(offlinePlayer);
                             if (p != null) {
-                                plugin.getOpenInv().retainPlayer(p, plugin);
                                 PlayerData data = plugin.getData(p);
-                                plugin.getOpenInv().releasePlayer(p, plugin);
                                 plugin.getOpenInv().unload(p);
                                 sendMessage(message.getSender(), MessageType.DATA, data);
                             } else {
