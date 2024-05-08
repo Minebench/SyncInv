@@ -16,8 +16,9 @@ import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.PlayerDataQuery;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
+import de.themoep.minedown.adventure.MineDown;
 import lombok.Getter;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -225,16 +226,15 @@ public final class SyncInv extends JavaPlugin {
                                     if (query.getYoungestServer() == null) {
                                         openInvCommand.onCommand(sender, command, label, args);
                                     } else {
-                                        sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
-                                                + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
+                                        sender.sendMessage(getLang("stale-player-data", "server", query.getYoungestServer()));
                                         connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
                                     }
                                 });
                                 if (q == null) {
-                                    sender.sendMessage(ChatColor.RED + "Could not query information from other servers! Take a look at the log for more details.");
+                                    sender.sendMessage(getLang("query-error"));
                                 }
                             } else {
-                                sender.sendMessage(ChatColor.RED + "Player not found!");
+                                sender.sendMessage(getLang("player-not-found"));
                             }
                         });
                         return true;
@@ -286,8 +286,11 @@ public final class SyncInv extends JavaPlugin {
     }
 
     public void loadConfig() {
-        saveDefaultConfig();
-        reloadConfig();
+        reloadConfig(); // load working config
+
+        // save newly added config options to disk
+        getConfig().options().copyDefaults(true);
+        saveConfig();
 
         debug = getConfig().getBoolean("debug");
 
@@ -388,11 +391,11 @@ public final class SyncInv extends JavaPlugin {
         }
     }
 
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String [] args) {
         if (args.length > 0) {
             if ("reload".equalsIgnoreCase(args[0]) && sender.hasPermission("syncing.command.reload")) {
                 loadConfig();
-                sender.sendMessage(ChatColor.YELLOW + "Config reloaded!");
+                sender.sendMessage(getLang("config-reloaded"));
                 return true;
             }
         }
@@ -401,16 +404,19 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get a language message from the config and replace variables in it
-     * @param key The key of the message (lang.<key>)
-     * @param replacements An array of variables to be replaced with certain strings in the format [var,repl,var,repl,...]
+     * @param key          The key of the message (lang.<key>)
+     * @param replacements An array of String to replace placeholders (uses the % character as placeholder indicators)
+     *                     in format of [placeholder, repl, placeholder,repl,...]
      * @return The message string with colorcodes and variables replaced
      */
-    public String getLang(String key, String... replacements) {
-        String msg = ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
-        for (int i = 0; i + 1 < replacements.length; i += 2) {
-            msg = msg.replace("%" + replacements[i] + "%", replacements[i+1]);
+    public Component getLang(String key, String... replacements) {
+        String rawMsg = getConfig().getString("lang." + key); // use default defined by config (values from the config in jar)
+
+        if (rawMsg == null) { // key is missing
+            return MineDown.parse(getName() + ": &cMissing language key &6" + key);
+        } else {
+            return MineDown.parse(rawMsg, replacements);
         }
-        return msg;
     }
 
     /**
@@ -1132,7 +1138,7 @@ public final class SyncInv extends JavaPlugin {
         runSync(() -> {
             Player player = getServer().getPlayer(playerId);
             if (player != null) {
-                player.kickPlayer(getLang(key));
+                player.kick(getLang(key));
             }
         });
     }

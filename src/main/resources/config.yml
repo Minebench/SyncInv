@@ -106,3 +106,7 @@ lang:
   cant-move: "&cYou can only move once your player data is loaded!"
   wait-for-loading: "&cPlease wait until your player data is loaded!"
   cant-load-data: "&cSorry but the server wasn't able to load your latest player data.\nPlease contact an administrator if this happens often!"
+  config-reloaded: "&eConfig reloaded!"
+  player-not-found: "&cPlayer not found!"
+  query-error : "Could not query information from other servers! Take a look at the log for more details."
+  stale-player-data : "&cCurrent server does not have newest player data! &7Connecting to server %server% which has the newest data..."

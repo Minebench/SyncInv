@@ -63,6 +63,12 @@
             <version>6.2.3.RELEASE</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>de.themoep</groupId>
+            <artifactId>minedown-adventure</artifactId>
+            <version>1.7.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -133,6 +139,10 @@
                                 <relocation>
                                     <pattern>org.reactivestreams</pattern>
                                     <shadedPattern>de.minebench.syncinv.lib.reactivestreams</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>de.themoep.minedown</pattern>
+                                    <shadedPattern>de.minebench.syncinv.lib.minedown</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
