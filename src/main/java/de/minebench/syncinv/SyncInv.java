@@ -55,8 +55,11 @@ import java.util.AbstractMap;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -129,6 +132,16 @@ public final class SyncInv extends JavaPlugin {
      * What to sync
      */
     private EnumSet<SyncType> enabledSyncTypes;
+
+    /**
+     * The statistics filter mode
+     */
+    private FilterMode statisticsFilterMode = FilterMode.DENY;
+
+    /**
+     * The statistics filter list
+     */
+    private Set<Statistic> statisticsFilter = new HashSet<>();
 
     /**
      * Whether or not the plugin is currently disabling
@@ -305,6 +318,23 @@ public final class SyncInv extends JavaPlugin {
                 enabledSyncTypes.add(syncType);
             }
         }
+
+        try {
+            statisticsFilterMode = FilterMode.valueOf(getConfig().getString("statistics-filter.mode", FilterMode.DENY.name()).toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            getLogger().log(Level.WARNING, "Invalid statistics filter mode in config! Using default DENY");
+            statisticsFilterMode = FilterMode.DENY;
+        }
+
+        Set<Statistic> statisticsFilter = EnumSet.noneOf(Statistic.class);
+        for (String statisticName : getConfig().getStringList("statistics-filter.list")) {
+            try {
+                statisticsFilter.add(Statistic.valueOf(statisticName.toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                getLogger().log(Level.WARNING, "Invalid statistic in statistics filter list: " + statisticName);
+            }
+        }
+        this.statisticsFilter = statisticsFilter;
 
         if (getServer().getPluginManager().isPluginEnabled("OpenInv")) {
             openInv = (OpenInv) getServer().getPluginManager().getPlugin("OpenInv");
@@ -755,6 +785,9 @@ public final class SyncInv extends JavaPlugin {
                 }
                 if (shouldSyncAny(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
                     for (Statistic statistic : Statistic.values()) {
+                        if (!shouldBeSynced(statistic)) {
+                            continue;
+                        }
                         switch (statistic.getType()) {
                             case UNTYPED:
                                 if (shouldSync(SyncType.GENERAL_STATISTICS)) {
@@ -872,6 +905,18 @@ public final class SyncInv extends JavaPlugin {
                 }
             }
         });
+    }
+
+    /**
+     * Check if a statistic should get synced
+     * @param statistic The statistic to check
+     * @return Whether it should be synced
+     */
+    private boolean shouldBeSynced(Statistic statistic) {
+        if (statisticsFilter.contains(statistic)) {
+            return statisticsFilterMode == FilterMode.ALLOW;
+        }
+        return statisticsFilterMode == FilterMode.DENY;
     }
 
     /**
@@ -1157,5 +1202,10 @@ public final class SyncInv extends JavaPlugin {
             return map.getWorld().getUID();
         }
         return null;
+    }
+
+    private enum FilterMode {
+        DENY,
+        ALLOW
     }
 }

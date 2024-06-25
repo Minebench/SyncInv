@@ -95,6 +95,12 @@ sync:
   item-statistics: false
   # Should the plugin sync block player statistics?
   block-statistics: false
+  # Statistics to sync or not sync
+  statistics-filter:
+    # mode to apply to the filter list, "deny" or "allow"
+    mode: "deny"
+    # The list, see https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Statistic.html for the names
+    list: []
   # Should the plugin try to keep maps in sync?
   maps: true
 
