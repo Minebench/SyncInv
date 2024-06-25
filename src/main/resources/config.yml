@@ -44,7 +44,7 @@ create-world: true
 
 # The amount of seconds we should maximally wait for all servers to
 # respond to a query
-query-timeout: 5
+query-timeout: 15
 
 # Whether or not we should load the data from queries that timed out
 # This might run into issues if the server with the most recent data
