@@ -160,12 +160,6 @@ public final class SyncInv extends JavaPlugin {
     // Offline player health setting
     private Method methodSetHealth;
 
-    // Persistent data syncing
-    private Method methodDeserializeCompound = null;
-    private Method methodPdcSerialize = null;
-    private Method methodGetRaw = null;
-    private Method methodPutAll = null;
-
     // Map syncing
     private Field fieldWorldMap;
     private Field fieldMapColor;
@@ -319,10 +313,9 @@ public final class SyncInv extends JavaPlugin {
 
         if (shouldSync(SyncType.PERSISTENT_DATA)) {
             try {
-                String basePackage = getServer().getClass().getPackage().getName();
-                Class<?> c = Class.forName(basePackage + ".util.CraftNBTTagConfigSerializer");
-                methodDeserializeCompound = c.getMethod("deserialize", Object.class);
-            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                PersistentDataContainer.class.getMethod("readFromBytes", byte[].class, boolean.class);
+                PersistentDataContainer.class.getMethod("serializeToBytes");
+            } catch (NoSuchMethodException e) {
                 if (shouldSync(SyncType.PERSISTENT_DATA)) {
                     getLogger().log(Level.WARNING, "Could not load static method required for persistent data syncing. Disabling it!", e);
                     disableSync(SyncType.PERSISTENT_DATA);
