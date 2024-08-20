@@ -5,8 +5,9 @@ Provided without any (implied) support nor warranty! (See [GPLv3 license](https:
 
 ## Requirements
 
-- At least Java 11
-- [Paper](https://papermc.io) Minecraft server software (tested on 1.16.5+, should be the same version on all synced servers)
+- At least Java 21
+- [Paper](https://papermc.io) Minecraft server software (tested on 1.20.6+, should be the same version on all synced
+  servers)
 - [redis](https://redis.io) pub-sub
 - [OpenInv](https://github.com/jikoo/OpenInv) (optionally, for a more smooth experience)
 
@@ -15,7 +16,7 @@ Provided without any (implied) support nor warranty! (See [GPLv3 license](https:
 1. Install redis, Paper, SyncInv (and optionally OpenInv).
 2. Configure the SyncInv [`config.yml`](https://github.com/Minebench/SyncInv/blob/master/src/main/resources/config.yml):
     1. Specify the `server-name` for each server as set in your proxy config
-    2. Setup the values for the pub-sub connection to your redis server in teh `redis` section
+    2. Setup the values for the pub-sub connection to your redis server in the `redis` section
     3. Toggle the types of data you want to sync in the `sync` section
     4. Familiarize yourself with all the [other settings](https://github.com/Minebench/SyncInv/blob/master/src/main/resources/config.yml) and adjust if necessary (the most important one probably beeing the `required-servers` list and the `server-group` name if you want multiple different sync groups in your network)
 
