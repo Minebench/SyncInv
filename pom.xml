@@ -49,8 +49,8 @@
         </dependency>
         <dependency>
             <groupId>com.lishid</groupId>
-            <artifactId>openinvplugincore</artifactId>
-            <version>4.4.4-SNAPSHOT</version>
+            <artifactId>openinvplugin</artifactId>
+            <version>5.1.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

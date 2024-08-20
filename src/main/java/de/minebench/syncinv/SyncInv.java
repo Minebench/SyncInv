@@ -5,7 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.lishid.openinv.OpenInv;
-import com.lishid.openinv.commands.OpenInvCommand;
+import com.lishid.openinv.command.OpenInvCommand;
 import com.mojang.authlib.GameProfile;
 import de.minebench.syncinv.listeners.MapCreationListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
@@ -209,7 +209,7 @@ public final class SyncInv extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
         if (openInv != null) {
-            OpenInvCommand openInvCommand = new OpenInvCommand(openInv);
+            OpenInvCommand openInvCommand = (OpenInvCommand) openInv.getCommand("openinv").getExecutor();
             CommandExecutor forwarding = (sender, command, label, args) -> {
                 if (sender instanceof Player && args.length > 0) {
                     if ("?".equalsIgnoreCase(args[0])) {
