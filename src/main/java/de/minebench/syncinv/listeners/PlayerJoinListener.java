@@ -47,7 +47,7 @@ public class PlayerJoinListener implements Listener {
                 e.setKickMessage(ChatColor.RED + plugin.getName() + " is not enabled! Please contact an administrator!");
                 return;
             }
-            if (plugin.getMessenger().queryData(e.getUniqueId()) == null && !plugin.getMessenger().isAlone()) {
+            if (plugin.getMessenger().queryData(e.getUniqueId()) == null && (!plugin.getMessenger().isAllowedToBeAlone() || !plugin.getMessenger().isAlone())) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 e.setKickMessage(ChatColor.RED + "Unable to query player data!");
                 return;
