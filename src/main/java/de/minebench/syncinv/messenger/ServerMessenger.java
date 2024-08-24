@@ -187,6 +187,14 @@ public abstract class ServerMessenger {
     }
 
     /**
+     * Check whether we are allowed to be alone (no required servers defined)
+     * @return Whether we are allowed to be alone
+     */
+    public boolean isAllowedToBeAlone() {
+        return requiredServers.isEmpty();
+    }
+
+    /**
      * Reaction on a message, this has to be called by the messenger implementation!
      * @param target    The server this message is targeted at
      * @param message   The message received

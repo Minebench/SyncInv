@@ -211,7 +211,7 @@ public final class SyncInv extends JavaPlugin {
         if (openInv != null) {
             OpenInvCommand openInvCommand = (OpenInvCommand) openInv.getCommand("openinv").getExecutor();
             CommandExecutor forwarding = (sender, command, label, args) -> {
-                if (sender instanceof Player && args.length > 0) {
+                if (sender instanceof Player && args.length > 0 && (!getMessenger().isAllowedToBeAlone() || !getMessenger().isAlone())) {
                     if ("?".equalsIgnoreCase(args[0])) {
                         return openInvCommand.onCommand(sender, command, label, args);
                     }
