@@ -1,7 +1,5 @@
 package de.minebench.syncinv.messenger;
 
-import lombok.Getter;
-
 /*
  * SyncInv
  * Copyright (c) 2021 Max Lee aka Phoenix616 (max@themoep.de)
@@ -19,7 +17,6 @@ import lombok.Getter;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-@Getter
 class VersionMismatchException extends Exception {
     private final int receivedVersion;
     private final int supportedVersion;
@@ -28,5 +25,19 @@ class VersionMismatchException extends Exception {
         super(message);
         this.receivedVersion = receivedVersion;
         this.supportedVersion = supportedVersion;
+    }
+
+    /**
+     * @return get the actual version that was received
+     */
+    public int getReceivedVersion() {
+        return receivedVersion;
+    }
+
+    /**
+     * @return get the version that is supported and was expected
+     */
+    public int getSupportedVersion() {
+        return supportedVersion;
     }
 }

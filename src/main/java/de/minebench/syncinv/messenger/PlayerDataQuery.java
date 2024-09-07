@@ -1,9 +1,8 @@
 package de.minebench.syncinv.messenger;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,16 +28,12 @@ import java.util.function.Consumer;
 
 public class PlayerDataQuery {
     private final long timestamp = System.currentTimeMillis();
-    @Getter
     private final UUID playerId;
-    @Getter
     private final long localLastSeen;
     private final Consumer<PlayerDataQuery> onComplete;
-    @Setter
     private BukkitTask timeoutTask;
     private boolean completed = false;
 
-    @Getter
     private final Map<String, Long> servers = new ConcurrentHashMap<>();
 
     public PlayerDataQuery(UUID playerId, long localLastSeen, Consumer<PlayerDataQuery> onComplete) {
@@ -107,5 +102,33 @@ public class PlayerDataQuery {
      */
     public Consumer<PlayerDataQuery> getOnComplete() {
         return onComplete;
+    }
+
+    /**
+     * @return the unique ID of the player
+     */
+    public UUID getPlayerId() {
+        return playerId;
+    }
+
+    /**
+     * @return the last seen time of this player on the local server
+     */
+    public long getLocalLastSeen() {
+        return localLastSeen;
+    }
+
+    /**
+     * @param timeoutTask the task to get canceled whenever the query completes
+     */
+    public void setTimeoutTask(BukkitTask timeoutTask) {
+        this.timeoutTask = timeoutTask;
+    }
+
+    /**
+     * @return an unmodifiable map of all servers and their last responded times
+     */
+    public Map<String, Long> getServers() {
+        return Collections.unmodifiableMap(servers);
     }
 }

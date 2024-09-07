@@ -18,8 +18,6 @@ package de.minebench.syncinv.messenger;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import lombok.Getter;
-import lombok.ToString;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
@@ -33,8 +31,6 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Queue;
 
-@Getter
-@ToString
 public class Message {
     public static final int VERSION = 4;
     private final String sender;
@@ -44,6 +40,7 @@ public class Message {
 
     /**
      * A Message of a certain type. Optionally with some data
+     *
      * @param type    The type of the message
      * @param id      The transaction ID this Message is associated with
      * @param objects The data, in the order that it should be send
@@ -98,12 +95,12 @@ public class Message {
     /**
      * Get the message from a bytearray generated as described in the toByteArray method
      * @param bytes The bytes
-     * @return      The Message object
+     * @return The Message object
      * @throws IOException
-     * @throws IllegalArgumentException         When the message type is not supported
+     * @throws IllegalArgumentException      When the message type is not supported
      * @throws ClassNotFoundException
-     * @throws InvalidConfigurationException    If the data is invalid
-     * @throws VersionMismatchException         If the received message is of a different version than it can accept
+     * @throws InvalidConfigurationException If the data is invalid
+     * @throws VersionMismatchException      If the received message is of a different version than it can accept
      */
     public static Message fromByteArray(byte[] bytes) throws IOException, IllegalArgumentException, ClassNotFoundException, InvalidConfigurationException, VersionMismatchException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
@@ -121,5 +118,43 @@ public class Message {
             }
             return new Message(sender, id, type, data);
         }
+    }
+
+    /**
+     * @return the sending server name
+     */
+    public String getSender() {
+        return sender;
+    }
+
+    /**
+     * @return the type of the message
+     */
+    public MessageType getType() {
+        return type;
+    }
+
+    /**
+     * @return the transaction ID this Message is associated with
+     */
+    public long getId() {
+        return id;
+    }
+    /**
+     * @return the data, in order
+     */
+    public Queue<Object> getData() {
+        return data;
+    }
+
+    /**
+     * @return a Sting representation of this message
+     */
+    public String toString() {
+        return "Message{" +
+            "sender='" + sender + '\'' +
+            ", type=" + type +
+            ", data=" + data +
+            '}';
     }
 }

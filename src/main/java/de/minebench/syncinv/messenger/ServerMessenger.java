@@ -3,7 +3,6 @@ package de.minebench.syncinv.messenger;
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import de.minebench.syncinv.SyncType;
-import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -37,44 +36,34 @@ import java.util.logging.Level;
 
 public abstract class ServerMessenger {
     protected final SyncInv plugin;
-
-    /**
-     * The group that this server is in
-     */
-    @Getter
-    private final String serverGroup;
-
-    /**
-     * The name of this server, should be the same as in the Bungee's config.yml
-     */
-    @Getter
-    private final String serverName;
-
     /**
      * The servers that are required to be online to query data
      */
     private final Set<String> requiredServers;
-
     /**
      * Store a set of all known servers
      */
     private final Set<String> servers = new HashSet<>();
-
     /**
      * Store the current queries for PlayerData
      */
     private final Map<UUID, PlayerDataQuery> queries = new ConcurrentHashMap<>();
-
     /**
      * This holds queue requests that need to be executed when the player logs out
      */
     private final Map<UUID, Map<String, Long>> queuedDataRequests = new ConcurrentHashMap<>();
-
     /**
      * List of channels that this plugin listens on
      */
-    @Getter
-    private Set<String> channels = new HashSet<>();
+    private final Set<String> channels = new HashSet<>();
+    /**
+     * The group that this server is in
+     */
+    private final String serverGroup;
+    /**
+     * The name of this server, should be the same as in the Bungee's config.yml
+     */
+    private final String serverName;
 
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
@@ -201,10 +190,10 @@ public abstract class ServerMessenger {
      */
     protected void onMessage(String target, Message message) {
         if (message.getSender().equals(getServerName()) // don't read messages from ourselves
-                || target != null // target is null? Accept message anyways...
-                && !"*".equals(target)
-                && !getServerName().equals(target)
-                && !("group:" + getServerGroup()).equalsIgnoreCase(target)) {
+            || target != null // target is null? Accept message anyways...
+            && !"*".equals(target)
+            && !getServerName().equals(target)
+            && !("group:" + getServerGroup()).equalsIgnoreCase(target)) {
             // This message is not for us
             return;
         }
@@ -358,7 +347,7 @@ public abstract class ServerMessenger {
         }
 
         if (!query.getServers().keySet().containsAll(servers)
-                || !query.getServers().keySet().containsAll(requiredServers)) {
+            || !query.getServers().keySet().containsAll(requiredServers)) {
             return false;
         }
 
@@ -485,5 +474,26 @@ public abstract class ServerMessenger {
                 sendMessage(entry.getKey(), entry.getValue(), MessageType.DATA, data);
             }
         }
+    }
+
+    /**
+     * @return The group that this server is in
+     */
+    public String getServerGroup() {
+        return serverGroup;
+    }
+
+    /**
+     * @return The name of this server, should be the same as in the Bungee's config. yml
+     */
+    public String getServerName() {
+        return serverName;
+    }
+
+    /**
+     * @return modifiable set of all the channels the plugin is listening to
+     */
+    public Set<String> getChannels() {
+        return channels;
     }
 }
