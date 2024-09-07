@@ -2,30 +2,30 @@ name: ${project.name}
 version: '${minecraft.plugin.version}'
 api-version: '1.20.6'
 main: de.minebench.syncinv.SyncInv
-softdepend: [OpenInv]
-authors: [Phoenix616]
+softdepend: [ OpenInv ]
+authors: [ Phoenix616 ]
 description: ${project.description}
 commands:
-   syncinv:
-      aliases: [syncinv]
-      description: Plugin command description.
-      usage: /<command> [reload]
-      permission: SyncInv.command
-      permission-message: You don't have the permission <permission>
-   openinv:
-      aliases: [oi, inv, open]
-      description: Open a player's inventory
-      permission: SyncInv.openinv
-      usage: /<command> <player> - Open a player's inventory
-   openender:
-      aliases: [oe]
-      description: Opens the enderchest of a player
-      permission: SyncInv.openender
-      usage: /<command> <player> - Open a player's enderchest
+  syncinv:
+    aliases: [ syncinv ]
+    description: Plugin command description.
+    usage: /<command> [reload]
+    permission: SyncInv.command
+    permission-message: You don't have the permission <permission>
+  openinv:
+    aliases: [ oi, inv, open ]
+    description: Open a player's inventory
+    permission: SyncInv.openinv
+    usage: /<command> <player> - Open a player's inventory
+  openender:
+    aliases: [ oe ]
+    description: Opens the enderchest of a player
+    permission: SyncInv.openender
+    usage: /<command> <player> - Open a player's enderchest
 permissions:
-   syncinv.command:
-      description: Gives permission to the plugin command
-      default: op
-   syncinv.command.reload:
-      description: Gives permission to reload the plugin
-      default: op
+  syncinv.command:
+    description: Gives permission to the plugin command
+    default: op
+  syncinv.command.reload:
+    description: Gives permission to reload the plugin
+    default: op

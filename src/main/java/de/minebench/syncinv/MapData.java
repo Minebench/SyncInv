@@ -18,14 +18,14 @@ package de.minebench.syncinv;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import lombok.Data;
 import org.bukkit.map.MapView;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 
-@Data
 public class MapData implements Serializable {
+    @Serial
     private static final long serialVersionUID = 4376356835175363489L;
     private final int id;
     private final UUID worldId;
@@ -36,4 +36,97 @@ public class MapData implements Serializable {
     private boolean locked;
     private boolean trackingPosition;
     private boolean unlimitedTracking;
+
+    public MapData(int id, UUID worldId, int centerX, int centerZ, MapView.Scale scale, byte[] colors) {
+        this.id = id;
+        this.worldId = worldId;
+        this.centerX = centerX;
+        this.centerZ = centerZ;
+        this.scale = scale;
+        this.colors = colors;
+    }
+
+    /**
+     * @return The id of the map
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @return the unique id of the world the map is in
+     */
+    public UUID getWorldId() {
+        return worldId;
+    }
+
+    /**
+     * @return the x coordinate of the center of the map
+     */
+    public int getCenterX() {
+        return centerX;
+    }
+
+    /**
+     * @return the z coordinate of the center of the map
+     */
+    public int getCenterZ() {
+        return centerZ;
+    }
+
+    /**
+     * @return the scale of the map
+     */
+    public MapView.Scale getScale() {
+        return scale;
+    }
+
+    /**
+     * @return the colors of the map
+     */
+    public byte[] getColors() {
+        return colors;
+    }
+
+    /**
+     * @return if the map is locked
+     */
+    public boolean isLocked() {
+        return locked;
+    }
+
+    /**
+     * @param locked if the map should be locked
+     */
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
+    /**
+     * @return if the map should track position
+     */
+    public boolean isTrackingPosition() {
+        return trackingPosition;
+    }
+
+    /**
+     * @param trackingPosition if the map should track position
+     */
+    public void setTrackingPosition(boolean trackingPosition) {
+        this.trackingPosition = trackingPosition;
+    }
+
+    /**
+     * @return Whether the map will show a smaller position cursor (true), or no position cursor (false) when cursor is outside of map's range.
+     */
+    public boolean isUnlimitedTracking() {
+        return unlimitedTracking;
+    }
+
+    /**
+     * @param unlimitedTracking Whether the map will show a smaller position cursor (true), or no position cursor (false) when cursor is outside of map's range.
+     */
+    public void setUnlimitedTracking(boolean unlimitedTracking) {
+        this.unlimitedTracking = unlimitedTracking;
+    }
 }
