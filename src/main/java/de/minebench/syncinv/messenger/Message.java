@@ -36,22 +36,25 @@ import java.util.Queue;
 @Getter
 @ToString
 public class Message {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
     private final String sender;
+    private final long id;
     private final MessageType type;
     private final Queue<Object> data = new ArrayDeque<>();
 
     /**
      * A Message of a certain type. Optionally with some data
      * @param type      The type of the message
+     * @param id        The transaction ID this Message is associated with
      * @param objects   The data, in the order that it should be send
      * @throws IllegalArgumentException when the amount of Objects given didn't match the MessageType requirements
      */
-    public Message(String sender, MessageType type, Object... objects) {
+    public Message(String sender, long id, MessageType type, Object... objects) {
         if (objects.length < type.getArgCount()) {
             throw new IllegalArgumentException(type + " requires at least " + type.getArgCount() + " arguments. Only " + objects.length + " were given!");
         }
         this.sender = sender;
+        this.id = id;
         this.type = type;
         if (objects.length > 0) {
             Collections.addAll(data, objects);
@@ -78,6 +81,7 @@ public class Message {
              ObjectOutput out = new BukkitObjectOutputStream(bos)) {
             out.writeInt(VERSION);
             out.writeUTF(getSender());
+            out.writeLong(id);
             out.writeUTF(getType().toString());
             out.writeInt(data.size());
             for (Object o : data) {
@@ -109,12 +113,13 @@ public class Message {
                 throw new VersionMismatchException(version, VERSION, "The received message is of version " + version + " while this plugin expects version " + VERSION);
             }
             String sender = in.readUTF();
+            long id = in.readLong();
             MessageType type = MessageType.valueOf(in.readUTF());
             Object[] data = new Object[in.readInt()];
             for (int i = 0; i < data.length; i++) {
                 data[i] = in.readObject();
             }
-            return new Message(sender, type, data);
+            return new Message(sender, id, type, data);
         }
     }
 

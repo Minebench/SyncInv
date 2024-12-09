@@ -286,7 +286,7 @@ public final class SyncInv extends JavaPlugin {
         disabling = true;
         if (getMessenger() != null) {
             for (Player player : getServer().getOnlinePlayers()) {
-                getMessenger().sendGroupMessage(new Message(getMessenger().getServerName(), MessageType.DATA, getData(player)), true);
+                getMessenger().sendGroupMessage(new Message(getMessenger().getServerName(), System.currentTimeMillis(), MessageType.DATA, getData(player)), true);
             }
             getMessenger().goodbye();
         }
@@ -1191,7 +1191,7 @@ public final class SyncInv extends JavaPlugin {
 
     public void setNewestMap(int newestMap) {
         if (getNewestMap() < newestMap) {
-            getMessenger().sendGroupMessage(MessageType.MAP_CREATED, newestMap);
+            getMessenger().sendGroupMessage(System.currentTimeMillis(), MessageType.MAP_CREATED, newestMap);
             this.newestMap = newestMap;
         }
     }
