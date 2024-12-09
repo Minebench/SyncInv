@@ -708,6 +708,7 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
 
+                logDebug("Applying data for " + player.getName() + " (" + data.getLastSeen() + ")");
                 if (shouldSync(SyncType.INVENTORY))
                     player.getInventory().setContents(data.getInventoryContents());
                 if (shouldSync(SyncType.ENDERCHEST))

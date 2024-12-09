@@ -233,7 +233,7 @@ public abstract class ServerMessenger {
                         query.addResponse(message.getSender(), lastSeen);
 
                         if (isCompleted(query)) { // All known servers responded
-                            plugin.logDebug("All servers in " + target + " responded to " + message.getType() + " query for " + playerId + "!");
+                            plugin.logDebug("All servers in group:" + getServerGroup() + " responded to " + message.getType() + " query for " + playerId + "!");
                             completeQuery(query);
                         }
                     } else { // No query was started? Why are we getting this message?
@@ -273,7 +273,7 @@ public abstract class ServerMessenger {
                     query = queries.get(data.getPlayerId());
                     if (query != null || plugin.shouldSyncWithGroupOnLogout() && plugin.getLastSeen(data.getPlayerId(), true) < data.getTimeStamp()) {
                         plugin.logDebug("Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + "." +
-                                " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLougut=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
+                                " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
                         plugin.applyData(data, () -> {
                             if (query != null) {
                                 query.stopTimeout();
@@ -282,7 +282,7 @@ public abstract class ServerMessenger {
                         });
                     } else {
                         plugin.logDebug("Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + " but we decided to not apply it!"
-                                + " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLougut=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
+                                + " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
                     }
                     break;
 
