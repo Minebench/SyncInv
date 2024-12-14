@@ -565,8 +565,13 @@ public final class SyncInv extends JavaPlugin {
             Player player = getServer().getPlayer(data.getPlayerId());
             boolean createdNewFile = false;
             if ((player == null || !player.isOnline()) && getMessenger().hasQuery(data.getPlayerId())) {
-                cacheData(data, finished);
-                logDebug("Player " + data.getPlayerId() + " has query but was not fully online yet! Caching data...");
+                long localLastSeen = getLastSeen(data.getPlayerId(), true);
+                if (localLastSeen < data.getLastSeen()) {
+                    cacheData(data, finished);
+                    logDebug("Player " + data.getPlayerId() + " has query but was not fully online yet! Caching data " + data.getLastSeen() + "...");
+                } else {
+                    logDebug("Not caching data for player " + data.getPlayerId() + " as our local player data is not older (" + localLastSeen + ") than the one provided! (" + data.getLastSeen() + ")");
+                }
                 return;
             }
             if (getOpenInv() != null) {
@@ -953,6 +958,14 @@ public final class SyncInv extends JavaPlugin {
      */
     public Map.Entry<PlayerData, Runnable> getCachedData(Player player) {
         return playerDataCache.getIfPresent(player.getUniqueId());
+    }
+
+    /**
+     * Remove the cached data of a player
+     * @param player   The player to remove the data for
+     */
+    public void removeCachedData(Player player) {
+        playerDataCache.invalidate(player.getUniqueId());
     }
 
     private File getPlayerDataFile(UUID playerId) {

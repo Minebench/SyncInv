@@ -80,7 +80,8 @@ public class PlayerJoinListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoined(PlayerJoinEvent e) {
         Map.Entry<PlayerData, Runnable> cached = plugin.getCachedData(e.getPlayer());
-        if (cached != null) {
+        if (cached != null && plugin.getLastSeen(e.getPlayer().getUniqueId(), false) < cached.getKey().getLastSeen()) {
+            plugin.removeCachedData(e.getPlayer());
             plugin.applyData(cached.getKey(), cached.getValue());
         }
     }
