@@ -798,55 +798,51 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
                 if (shouldSyncAny(SyncType.GENERAL_STATISTICS, SyncType.ENTITY_STATISTICS, SyncType.ITEM_STATISTICS, SyncType.BLOCK_STATISTICS)) {
-                    for (Statistic statistic : Statistic.values()) {
+                    for (Map.Entry<Statistic, Map<String, Integer>> entry : data.getStatistics().rowMap().entrySet()) {
+                        Statistic statistic = entry.getKey();
                         if (!shouldBeSynced(statistic)) {
                             continue;
                         }
-                        switch (statistic.getType()) {
-                            case UNTYPED:
-                                if (shouldSync(SyncType.GENERAL_STATISTICS)) {
-                                    Integer value = data.getStatistics().get(statistic, "");
-                                    if (value != null && value >= 0) {
-                                        player.setStatistic(statistic, value);
+
+                        for (Map.Entry<String, Integer> valueEntry : entry.getValue().entrySet()) {
+                            if (valueEntry.getValue() <= 0) {
+                                continue;
+                            }
+                            switch (statistic.getType()) {
+                                case UNTYPED:
+                                    if (shouldSync(SyncType.GENERAL_STATISTICS)) {
+                                        player.setStatistic(statistic, valueEntry.getValue());
                                     }
-                                }
-                                break;
-                            case ENTITY:
-                                if (shouldSync(SyncType.ENTITY_STATISTICS)) {
-                                    for (EntityType entityType : EntityType.values()) {
-                                        Integer value = data.getStatistics().get(statistic, entityType.name());
-                                        if (value != null && value > 0) {
-                                            player.setStatistic(statistic, entityType, value);
+                                    break;
+                                case ENTITY:
+                                    if (shouldSync(SyncType.ENTITY_STATISTICS)) {
+                                        try {
+                                            EntityType entityType = EntityType.valueOf(valueEntry.getKey());
+                                            player.setStatistic(statistic, entityType, valueEntry.getValue());
+                                        } catch (IllegalArgumentException ignored) {
+                                            // unknown entity type
                                         }
                                     }
-                                }
-                                break;
-                            case BLOCK:
-                                if (shouldSync(SyncType.BLOCK_STATISTICS)) {
-                                    for (Material blockType : Material.values()) {
-                                        if (blockType.isBlock()) {
-                                            Integer value = data.getStatistics().get(statistic, blockType.name());
-                                            if (value != null && value > 0) {
-                                                player.setStatistic(statistic, blockType, value);
-                                            }
+                                    break;
+                                case BLOCK:
+                                    if (shouldSync(SyncType.BLOCK_STATISTICS)) {
+                                        Material blockType = Material.getMaterial(valueEntry.getKey());
+                                        if (blockType != null) {
+                                            player.setStatistic(statistic, blockType, valueEntry.getValue());
                                         }
                                     }
-                                }
-                                break;
-                            case ITEM:
-                                if (shouldSync(SyncType.ITEM_STATISTICS)) {
-                                    for (Material itemType : Material.values()) {
-                                        if (itemType.isItem()) {
-                                            Integer value = data.getStatistics().get(statistic, itemType.name());
-                                            if (value != null && value > 0) {
-                                                player.setStatistic(statistic, itemType, value);
-                                            }
+                                    break;
+                                case ITEM:
+                                    if (shouldSync(SyncType.ITEM_STATISTICS)) {
+                                        Material itemType = Material.getMaterial(valueEntry.getKey());
+                                        if (itemType != null) {
+                                            player.setStatistic(statistic, itemType, valueEntry.getValue());
                                         }
                                     }
-                                }
-                                break;
+                                    break;
+                            }
                         }
-                    }
+                        }
                 }
                 if (player.isOnline()) {
                     if (shouldSync(SyncType.EFFECTS)) {
