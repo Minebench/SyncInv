@@ -3,7 +3,6 @@ package de.minebench.syncinv.messenger;
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
 import de.minebench.syncinv.SyncType;
-import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -37,44 +36,34 @@ import java.util.logging.Level;
 
 public abstract class ServerMessenger {
     protected final SyncInv plugin;
-
-    /**
-     * The group that this server is in
-     */
-    @Getter
-    private final String serverGroup;
-
-    /**
-     * The name of this server, should be the same as in the Bungee's config.yml
-     */
-    @Getter
-    private final String serverName;
-    
     /**
      * The servers that are required to be online to query data
      */
     private final Set<String> requiredServers;
-
     /**
      * Store a set of all known servers
      */
     private final Set<String> servers = new HashSet<>();
-
     /**
      * Store the current queries for PlayerData
      */
     private final Map<UUID, PlayerDataQuery> queries = new ConcurrentHashMap<>();
-
     /**
      * This holds queue requests that need to be executed when the player logs out
      */
     private final Map<UUID, Map<String, Long>> queuedDataRequests = new ConcurrentHashMap<>();
-
     /**
      * List of channels that this plugin listens on
      */
-    @Getter
-    private Set<String> channels = new HashSet<>();
+    private final Set<String> channels = new HashSet<>();
+    /**
+     * The group that this server is in
+     */
+    private final String serverGroup;
+    /**
+     * The name of this server, should be the same as in the Bungee's config.yml
+     */
+    private final String serverName;
 
     public ServerMessenger(SyncInv plugin) {
         this.plugin = plugin;
@@ -103,7 +92,7 @@ public abstract class ServerMessenger {
 
     /**
      * Register channels that this messenger should listen on
-     * @param channels  The channels to listen on
+     * @param channels The channels to listen on
      */
     private void registerChannel(String... channels) {
         for (String channel : channels) {
@@ -133,7 +122,7 @@ public abstract class ServerMessenger {
                 // players will associate the level up sound from the exp giving with the successful load of the inventory
                 // --> play sound
                 plugin.playLoadSound(query.getPlayerId());
-            } else if (plugin.shouldQueryInventories()){
+            } else if (plugin.shouldQueryInventories()) {
                 sendMessage(youngestServer, query.getTimestamp(), MessageType.GET_DATA, query.getPlayerId()); // Query the player's data
                 query.setTimeoutTask(plugin.runLater(() -> {
                     plugin.sendMessage(query.getPlayerId(), "cant-load-data");
@@ -148,8 +137,8 @@ public abstract class ServerMessenger {
 
     /**
      * Query the data of a player
-     * @param playerId      The UUID of the player
-     * @param onComplete    Handle the player data when all we have all information from the other servers
+     * @param playerId   The UUID of the player
+     * @param onComplete Handle the player data when all we have all information from the other servers
      * @return The PlayerDataQuery object, either a new one or the existing one. null if we are unable to query.
      */
     public PlayerDataQuery queryData(UUID playerId, Consumer<PlayerDataQuery> onComplete) {
@@ -157,7 +146,7 @@ public abstract class ServerMessenger {
             plugin.logDebug("Tried to query data for " + playerId + " but we are all alone :'(");
             return null;
         }
-        
+
         if (!servers.containsAll(requiredServers)) {
             plugin.logDebug("Tried to query data for " + playerId + " but not all required servers are here :'(");
             return null;
@@ -196,22 +185,22 @@ public abstract class ServerMessenger {
 
     /**
      * Reaction on a message, this has to be called by the messenger implementation!
-     * @param target    The server this message is targeted at
-     * @param message   The message received
+     * @param target  The server this message is targeted at
+     * @param message The message received
      */
     protected void onMessage(String target, Message message) {
         if (message.getSender().equals(getServerName()) // don't read messages from ourselves
-                || target != null // target is null? Accept message anyways...
-                && !"*".equals(target)
-                && !getServerName().equals(target)
-                && !("group:" + getServerGroup()).equalsIgnoreCase(target) ) {
+            || target != null // target is null? Accept message anyways...
+            && !"*".equals(target)
+            && !getServerName().equals(target)
+            && !("group:" + getServerGroup()).equalsIgnoreCase(target)) {
             // This message is not for us
             return;
         }
-    
+
         servers.add(message.getSender());
 
-        UUID playerId = null;
+        UUID playerId;
         long lastSeen;
         Player player;
         PlayerDataQuery query;
@@ -254,7 +243,7 @@ public abstract class ServerMessenger {
                             queueDataRequest(playerId, message.getSender(), message.getId());
                         }
                         sendMessage(message.getSender(), message.getId(), MessageType.IS_ONLINE, playerId); // Tell the sender
-                    } else if (plugin.getOpenInv() != null){
+                    } else if (plugin.getOpenInv() != null) {
                         OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(playerId);
                         if (offlinePlayer.hasPlayedBefore()) {
                             // we can ensure here that openInv is using the same player instance as we do and therefor it is safe to unload regardless of openinv saving it or not
@@ -282,7 +271,7 @@ public abstract class ServerMessenger {
                             break;
                         }
                         plugin.logDebug(message.getId() + " Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + ". Applying it." +
-                                " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
+                            " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" + data.getTimeStamp());
                         plugin.applyData(data, () -> {
                             if (query != null) {
                                 query.stopTimeout();
@@ -291,7 +280,7 @@ public abstract class ServerMessenger {
                         });
                     } else {
                         plugin.logDebug(message.getId() + " Received " + message.getType() + " for " + data.getPlayerId() + " from " + message.getSender() + " targeted at " + target + " but we decided to not apply it!"
-                                + " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" +  data.getTimeStamp());
+                            + " isQueryNull=" + (query == null) + ", shouldSyncWithGroupOnLogout=" + plugin.shouldSyncWithGroupOnLogout() + ", dataTimestamp=" + data.getTimeStamp());
                     }
                     break;
 
@@ -312,7 +301,7 @@ public abstract class ServerMessenger {
                     break;
 
                 case CANT_GET_DATA:
-                    // Send the player to the server if we can't get the data and he has an open request
+                    // Send the player to the server if we can't get the data, and he has an open request
                     playerId = (UUID) message.read();
                     plugin.logDebug(message.getId() + " Received " + message.getType() + " for " + playerId + " from " + message.getSender() + " targeted at " + target);
                     if (hasQuery(playerId)) {
@@ -350,15 +339,15 @@ public abstract class ServerMessenger {
     /**
      * Check if a query was answered by all known servers
      * @param query The query to check
-     * @return      Whether or not all servers responded
+     * @return Whether or not all servers responded
      */
     private boolean isCompleted(PlayerDataQuery query) {
         if (query.getServers().size() < servers.size()) {
             return false;
         }
-        
+
         if (!query.getServers().keySet().containsAll(servers)
-                || !query.getServers().keySet().containsAll(requiredServers)) {
+            || !query.getServers().keySet().containsAll(requiredServers)) {
             return false;
         }
 
@@ -368,12 +357,12 @@ public abstract class ServerMessenger {
 
     /**
      * Send a simple message with only a type to other servers
-     * @param target    The name of the target server;
-     *                  use "group:<group>" to only send to a specific group of servers;
-     *                  use "*" to send it to everyone
-     * @param id        The transaction ID this Message is associated with
-     * @param type      The type of the message to send
-     * @param objects   The data to send in the order the exact order
+     * @param target  The name of the target server;
+     *                use "group:<group>" to only send to a specific group of servers;
+     *                use "*" to send it to everyone
+     * @param id      The transaction ID this Message is associated with
+     * @param type    The type of the message to send
+     * @param objects The data to send in the order the exact order
      */
     public void sendMessage(String target, long id, MessageType type, Object... objects) {
         sendMessage(target, new Message(getServerName(), id, type, objects), false);
@@ -381,11 +370,11 @@ public abstract class ServerMessenger {
 
     /**
      * Send a message to other servers
-     * @param target    The name of the target server;
-     *                  use "group:<group>" to only send to a specific group of servers;
-     *                  use "*" to send it to everyone
-     * @param message   The message to send
-     * @param sync      Whether the message should be send sync or on its own thread
+     * @param target  The name of the target server;
+     *                use "group:<group>" to only send to a specific group of servers;
+     *                use "*" to send it to everyone
+     * @param message The message to send
+     * @param sync    Whether the message should be send sync or on its own thread
      */
     public void sendMessage(String target, Message message, boolean sync) {
         plugin.logDebug(message.getId() + " Sending " + (sync ? "sync " : "") + message.getType() + " to " + target + " containing " + message.getData().size() + " objects.");
@@ -394,9 +383,9 @@ public abstract class ServerMessenger {
 
     /**
      * Send a simple message with only a type to all servers of the group
-     * @param id        The transaction ID this Message is associated with
-     * @param type      The type of the message to send
-     * @param objects   The data to send in the order the exact order
+     * @param id      The transaction ID this Message is associated with
+     * @param type    The type of the message to send
+     * @param objects The data to send in the order the exact order
      */
     public void sendGroupMessage(long id, MessageType type, Object... objects) {
         sendMessage("group:" + getServerGroup(), id, type, objects);
@@ -404,8 +393,8 @@ public abstract class ServerMessenger {
 
     /**
      * Send a message to all servers of the group
-     * @param message   The message to send
-     * @param sync      Whether the message should be send sync or on its own thread
+     * @param message The message to send
+     * @param sync    Whether the message should be send sync or on its own thread
      */
     public void sendGroupMessage(Message message, boolean sync) {
         sendMessage("group:" + getServerGroup(), message, sync);
@@ -433,7 +422,7 @@ public abstract class ServerMessenger {
      * Add a query for a player
      * @param playerId The UUID of the player
      * @param query    The query to add
-     * @return         The previous PlayerDataQuery if there was one
+     * @return The previous PlayerDataQuery if there was one
      */
     public PlayerDataQuery addQuery(UUID playerId, PlayerDataQuery query) {
         Player player = plugin.getServer().getPlayer(playerId);
@@ -447,8 +436,8 @@ public abstract class ServerMessenger {
 
     /**
      * Remove an active query of a player
-     * @param playerId  The UUID of the player
-     * @return          The previous PlayerDataQuery if there was one
+     * @param playerId The UUID of the player
+     * @return The previous PlayerDataQuery if there was one
      */
     public PlayerDataQuery removeQuery(UUID playerId) {
         return queries.remove(playerId);
@@ -457,8 +446,8 @@ public abstract class ServerMessenger {
     /**
      * Add a server to the data request queue
      * @param playerId The UUID of the player
-     * @param server The name of the server
-     * @param id The transaction ID this query is associated with
+     * @param server   The name of the server
+     * @param id       The transaction ID this query is associated with
      */
     private void queueDataRequest(UUID playerId, String server, long id) {
         queuedDataRequests.computeIfAbsent(playerId, uuid -> Collections.synchronizedMap(new LinkedHashMap<>())).put(server, id);
@@ -485,5 +474,26 @@ public abstract class ServerMessenger {
                 sendMessage(entry.getKey(), entry.getValue(), MessageType.DATA, data);
             }
         }
+    }
+
+    /**
+     * @return The group that this server is in
+     */
+    public String getServerGroup() {
+        return serverGroup;
+    }
+
+    /**
+     * @return The name of this server, should be the same as in the Bungee's config. yml
+     */
+    public String getServerName() {
+        return serverName;
+    }
+
+    /**
+     * @return modifiable set of all the channels the plugin is listening to
+     */
+    public Set<String> getChannels() {
+        return channels;
     }
 }

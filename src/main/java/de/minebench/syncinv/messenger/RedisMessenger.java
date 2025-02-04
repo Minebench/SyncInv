@@ -36,10 +36,10 @@ import java.util.logging.Level;
  */
 
 public class RedisMessenger extends ServerMessenger {
-    private final RedisClient client;
-    private StatefulRedisConnection<String, byte[]> connection;
     private static final String CHANNEL_PREFIX = "syncinv:";
     private static final String VERSION_PREFIX = Message.VERSION + ":";
+    private final RedisClient client;
+    private StatefulRedisConnection<String, byte[]> connection;
 
     public RedisMessenger(SyncInv plugin) {
         super(plugin);
@@ -62,7 +62,7 @@ public class RedisMessenger extends ServerMessenger {
         client = RedisClient.create(uri);
 
         StatefulRedisPubSubConnection<String, byte[]> connection = client.connectPubSub(new StringByteArrayCodec());
-        connection.addListener(new RedisPubSubListener<String, byte[]>() {
+        connection.addListener(new RedisPubSubListener<>() {
             @Override
             public void message(String channel, byte[] bytes) {
                 if (!channel.startsWith(CHANNEL_PREFIX)) {
@@ -126,8 +126,7 @@ public class RedisMessenger extends ServerMessenger {
         }
     }
 
-    private class StringByteArrayCodec implements RedisCodec<String, byte[]> {
-
+    private static class StringByteArrayCodec implements RedisCodec<String, byte[]> {
         private final StringCodec stringCodec = new StringCodec();
         private final ByteArrayCodec byteArrayCodec = new ByteArrayCodec();
 
