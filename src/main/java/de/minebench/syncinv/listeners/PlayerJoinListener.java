@@ -50,7 +50,6 @@ public class PlayerJoinListener implements Listener {
             if (plugin.getMessenger().queryData(e.getUniqueId()) == null && (!plugin.getMessenger().isAllowedToBeAlone() || !plugin.getMessenger().isAlone())) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 e.setKickMessage(ChatColor.RED + "Unable to query player data!");
-                return;
             }
         }
     }
@@ -71,7 +70,7 @@ public class PlayerJoinListener implements Listener {
             } else if (entity != null) {
                 // Well... this is weird. An entity with the same UUID as the player's exists?!? Removing it just to be sure...
                 plugin.getLogger().info("A " + entity + " with the same UUID " + e.getPlayer().getUniqueId()
-                        + " as the player login in existed on the server at " + entity.getLocation() + "... removing it!");
+                    + " as the player login in existed on the server at " + entity.getLocation() + "... removing it!");
                 entity.remove();
             }
         }

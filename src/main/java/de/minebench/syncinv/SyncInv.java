@@ -16,7 +16,6 @@ import de.minebench.syncinv.messenger.MessageType;
 import de.minebench.syncinv.messenger.PlayerDataQuery;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
-import lombok.Getter;
 import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
@@ -93,13 +92,11 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Reference to the OpenInv plugin to load data for the query option
      */
-    @Getter
     private OpenInv openInv = null;
 
     /**
      * The messenger for communications between the servers
      */
-    @Getter
     private ServerMessenger messenger;
 
     /**
@@ -111,7 +108,7 @@ public final class SyncInv extends JavaPlugin {
      * Sync data with all servers in a group when a player logs out
      */
     private boolean syncWithGroupOnLogout;
-    
+
     /**
      * Store player data even if the player never joined the server
      */
@@ -120,7 +117,6 @@ public final class SyncInv extends JavaPlugin {
     /**
      * The amount of seconds we should wait for a query to stopTimeout
      */
-    @Getter
     private int queryTimeout;
 
     /**
@@ -146,21 +142,18 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Whether or not the plugin is currently disabling
      */
-    @Getter
     private boolean disabling = false;
 
     /**
      * Whether or not the plugin is in debugging mode
      */
-    @Getter
     private boolean debug;
 
     /**
      * The id of the newest map that was seen on this server
      */
-    @Getter
     private int newestMap = 0;
-    
+
     // Unknown player storing
     private Method methodGetOfflinePlayer = null;
     private Method methodGetHandle = null;
@@ -184,7 +177,7 @@ public final class SyncInv extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         loadConfig();
-        
+
         playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         try {
             methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", GameProfile.class);
@@ -233,7 +226,7 @@ public final class SyncInv extends JavaPlugin {
                                         openInvCommand.onCommand(sender, command, label, args);
                                     } else {
                                         sender.sendMessage(ChatColor.RED + "Current server does not have newest player data! "
-                                                + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
+                                            + ChatColor.GRAY + "Connecting to server " + query.getYoungestServer() + " which has the newest data...");
                                         connectToServer(((Player) sender).getUniqueId(), query.getYoungestServer());
                                     }
                                 });
@@ -303,7 +296,7 @@ public final class SyncInv extends JavaPlugin {
         syncWithGroupOnLogout = getConfig().getBoolean("sync-with-group-on-logout");
 
         storeUnknownPlayers = getConfig().getBoolean("store-unknown-players");
-        
+
         queryTimeout = getConfig().getInt("query-timeout");
         applyTimedOutQueries = getConfig().getBoolean("apply-timed-out-queries");
 
@@ -311,7 +304,7 @@ public final class SyncInv extends JavaPlugin {
         for (SyncType syncType : SyncType.values()) {
             String key = "sync." + syncType.getKey();
             if (!getConfig().contains(key, true)
-                    && getConfig().contains("sync-" + syncType.getKey(), true)) {
+                && getConfig().contains("sync-" + syncType.getKey(), true)) {
                 key = "sync-" + syncType.getKey();
             }
             if (getConfig().getBoolean(key)) {
@@ -394,8 +387,8 @@ public final class SyncInv extends JavaPlugin {
         if (storeUnknownPlayers && getServer().getWorld("world") == null && getConfig().getBoolean("create-world")) {
             getLogger().log(Level.INFO, "No world with the name 'world' exists while 'store-unknown-players' is enabled. This world is needed for that functionality to work correctly, creating it... (can be disabled with 'create-world' in the config)");
             World world = getServer().createWorld(new WorldCreator("world")
-                    .type(WorldType.FLAT)
-                    .generateStructures(false));
+                .type(WorldType.FLAT)
+                .generateStructures(false));
             world.setAutoSave(false);
             world.setViewDistance(2);
             world.setKeepSpawnInMemory(false);
@@ -420,14 +413,14 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get a language message from the config and replace variables in it
-     * @param key The key of the message (lang.<key>)
+     * @param key          The key of the message (lang.<key>)
      * @param replacements An array of variables to be replaced with certain strings in the format [var,repl,var,repl,...]
      * @return The message string with colorcodes and variables replaced
      */
     public String getLang(String key, String... replacements) {
         String msg = ChatColor.translateAlternateColorCodes('&', getConfig().getString("lang." + key, getName() + ": &cMissing language key &6" + key));
         for (int i = 0; i + 1 < replacements.length; i += 2) {
-            msg = msg.replace("%" + replacements[i] + "%", replacements[i+1]);
+            msg = msg.replace("%" + replacements[i] + "%", replacements[i + 1]);
         }
         return msg;
     }
@@ -443,10 +436,10 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Get the date when a player last logged out
-     * @param playerId  The UUID of the player
-     * @param online    Whether or not it should return the current time if the player is online
-     * @return          The timestamp of his last known data on the server in milliseconds;
-     *                  0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
+     * @param playerId The UUID of the player
+     * @param online   Whether or not it should return the current time if the player is online
+     * @return The timestamp of his last known data on the server in milliseconds;
+     * 0 if the file doesn't exist or an error occurs. (Take a look at {File#lastModified})
      */
     public long getLastSeen(UUID playerId, boolean online) {
         if (online) {
@@ -476,7 +469,7 @@ public final class SyncInv extends JavaPlugin {
      * @param playerId  The UUID of the player
      * @param timeStamp The timestamp to set as the last modify time of the file in
      *                  milliseconds.
-     * @return          true if the time was successfully set
+     * @return true if the time was successfully set
      */
     public boolean setLastSeen(UUID playerId, long timeStamp) {
         File playerDat = getPlayerDataFile(playerId);
@@ -531,7 +524,7 @@ public final class SyncInv extends JavaPlugin {
     /**
      * Connect a player to a bungee server
      * @param playerId The UUID of the player
-     * @param server The name of the server
+     * @param server   The name of the server
      */
     public void connectToServer(UUID playerId, String server) {
         Player player = getServer().getPlayer(playerId);
@@ -545,7 +538,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Apply a PlayerData object to its player
-     * @param data  The data to apply
+     * @param data The data to apply
      */
     public void applyData(PlayerData data, Runnable finished) {
         if (data == null)
@@ -553,8 +546,8 @@ public final class SyncInv extends JavaPlugin {
 
         if (data.getDataVersion() != getServer().getUnsafe().getDataVersion()) {
             getLogger().log(Level.WARNING, "Received data with "
-                    + (data.getDataVersion() < getServer().getUnsafe().getDataVersion() ? "older" : "newer")
-                    + " Minecraft data version (" + data.getDataVersion() + ") than this server (" + getServer().getUnsafe().getDataVersion() + "). Trying to apply anyways but there will most likely be errors! Please try running the same Server version on all synced servers.");
+                + (data.getDataVersion() < getServer().getUnsafe().getDataVersion() ? "older" : "newer")
+                + " Minecraft data version (" + data.getDataVersion() + ") than this server (" + getServer().getUnsafe().getDataVersion() + "). Trying to apply anyways but there will most likely be errors! Please try running the same Server version on all synced servers.");
         }
 
         runSync(() -> {
@@ -641,7 +634,7 @@ public final class SyncInv extends JavaPlugin {
             }
             if (player == null) {
                 logDebug("Could not apply data for player " + data.getPlayerId() + " as he isn't online and "
-                        + (getOpenInv() == null ? "this server doesn't have OpenInv installed!" : "never was online on this server before!"));
+                    + (getOpenInv() == null ? "this server doesn't have OpenInv installed!" : "never was online on this server before!"));
                 if (createdNewFile) {
                     getPlayerDataFile(data.getPlayerId()).delete();
                 }
@@ -764,7 +757,7 @@ public final class SyncInv extends JavaPlugin {
                     } catch (NullPointerException ignored) {
                         // world is not known
                     }
-                    for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
+                    for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext(); ) {
                         Advancement advancement = it.next();
                         Map<String, Long> awarded = data.getAdvancementProgress().get(advancement.getKey().toString());
                         if (awarded != null) {
@@ -838,7 +831,7 @@ public final class SyncInv extends JavaPlugin {
                                     break;
                             }
                         }
-                        }
+                    }
                 }
                 if (player.isOnline()) {
                     if (shouldSync(SyncType.EFFECTS)) {
@@ -932,20 +925,13 @@ public final class SyncInv extends JavaPlugin {
         map.addRenderer(new EmptyRenderer());
     }
 
-    private static class EmptyRenderer extends MapRenderer {
-        @Override
-        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
-
-        }
-    }
-
     private void cacheData(PlayerData data, Runnable finished) {
         playerDataCache.put(data.getPlayerId(), new AbstractMap.SimpleEntry<>(data, finished));
     }
 
     /**
      * Get data that was cached which should be applied on a player's login
-     * @param player    The player to get the data for
+     * @param player The player to get the data for
      * @return A cache entry containing the PlayerData and the notification Runnable when applied successfully
      */
     public Map.Entry<PlayerData, Runnable> getCachedData(Player player) {
@@ -954,7 +940,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * Remove the cached data of a player
-     * @param player   The player to remove the data for
+     * @param player The player to remove the data for
      */
     public void removeCachedData(Player player) {
         playerDataCache.invalidate(player.getUniqueId());
@@ -998,7 +984,7 @@ public final class SyncInv extends JavaPlugin {
         }
 
         if (shouldSync(SyncType.ADVANCEMENTS)) {
-            for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext();) {
+            for (Iterator<Advancement> it = getServer().advancementIterator(); it.hasNext(); ) {
                 Advancement advancement = it.next();
                 AdvancementProgress progress = player.getAdvancementProgress(advancement);
                 Map<String, Long> awarded = new HashMap<>();
@@ -1085,12 +1071,12 @@ public final class SyncInv extends JavaPlugin {
                     }
 
                     MapData mapData = new MapData(
-                            map.getId(),
-                            worldId,
-                            map.getCenterX(),
-                            map.getCenterZ(),
-                            map.getScale(),
-                            colors
+                        map.getId(),
+                        worldId,
+                        map.getCenterX(),
+                        map.getCenterZ(),
+                        map.getScale(),
+                        colors
                     );
                     try {
                         // Newer map info
@@ -1110,7 +1096,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param playerId  The uuid of the Player to play the sound to
+     * @param playerId The uuid of the Player to play the sound to
      */
     public void playLoadSound(UUID playerId) {
         Player player = getServer().getPlayer(playerId);
@@ -1121,7 +1107,7 @@ public final class SyncInv extends JavaPlugin {
 
     /**
      * The sound to play when a player gets unlocked, should match the vanilla levelup
-     * @param player    The Player to play the sound to
+     * @param player The Player to play the sound to
      */
     public void playLoadSound(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1);
@@ -1148,7 +1134,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task runs on the primary thread
      */
     public void runSync(Runnable run) {
-        if(getServer().isPrimaryThread() || disabling) {
+        if (getServer().isPrimaryThread() || disabling) {
             run.run();
         } else {
             getServer().getScheduler().runTask(this, run);
@@ -1159,7 +1145,7 @@ public final class SyncInv extends JavaPlugin {
      * Make sure that a task does not run on the primary thread
      */
     public void runAsync(Runnable run) {
-        if(!getServer().isPrimaryThread() && !disabling) {
+        if (!getServer().isPrimaryThread() && !disabling) {
             getServer().getScheduler().runTaskAsynchronously(this, run);
         } else {
             run.run();
@@ -1194,13 +1180,6 @@ public final class SyncInv extends JavaPlugin {
         }
     }
 
-    public void setNewestMap(int newestMap) {
-        if (getNewestMap() < newestMap) {
-            getMessenger().sendGroupMessage(System.currentTimeMillis(), MessageType.MAP_CREATED, newestMap);
-            this.newestMap = newestMap;
-        }
-    }
-
     public UUID getWorldId(MapView map) {
         if (map == null) {
             return null;
@@ -1217,8 +1196,63 @@ public final class SyncInv extends JavaPlugin {
         return null;
     }
 
+    /**
+     * @return Reference to the OpenInv plugin to load data for the query option
+     */
+    public OpenInv getOpenInv() {
+        return openInv;
+    }
+
+    /**
+     * @return The messenger for communications between the servers
+     */
+    public ServerMessenger getMessenger() {
+        return messenger;
+    }
+
+    /**
+     * @return The amount of seconds we should wait for a query to stopTimeout
+     */
+    public int getQueryTimeout() {
+        return queryTimeout;
+    }
+
+    /**
+     * @return Whether or not the plugin is currently disabling
+     */
+    public boolean isDisabling() {
+        return disabling;
+    }
+
+    /**
+     * @return Whether or not the plugin is in debugging mode
+     */
+    public boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     * @return The id of the newest map that was seen on this server
+     */
+    public int getNewestMap() {
+        return newestMap;
+    }
+
+    public void setNewestMap(int newestMap) {
+        if (getNewestMap() < newestMap) {
+            getMessenger().sendGroupMessage(System.currentTimeMillis(), MessageType.MAP_CREATED, newestMap);
+            this.newestMap = newestMap;
+        }
+    }
+
     private enum FilterMode {
         DENY,
         ALLOW
+    }
+
+    private static class EmptyRenderer extends MapRenderer {
+        @Override
+        public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+        }
     }
 }

@@ -2,6 +2,7 @@ package de.minebench.syncinv.messenger;
 
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,7 @@ public class PlayerDataQuery {
     private BukkitTask timeoutTask;
     private boolean completed = false;
 
-    private Map<String, Long> servers = new ConcurrentHashMap<>();
+    private final Map<String, Long> servers = new ConcurrentHashMap<>();
 
     public PlayerDataQuery(UUID playerId, long localLastSeen, Consumer<PlayerDataQuery> onComplete) {
         this.playerId = playerId;
@@ -41,21 +42,9 @@ public class PlayerDataQuery {
         this.onComplete = onComplete;
     }
 
-    public UUID getPlayerId() {
-        return playerId;
-    }
-
-    public long getLocalLastSeen() {
-        return localLastSeen;
-    }
-
-    public Map<String, Long> getServers() {
-        return servers;
-    }
-
     /**
      * Add a new response to this query
-     * @param server The name of the server
+     * @param server   The name of the server
      * @param lastSeen When the user was last seen on that server
      */
     public void addResponse(String server, long lastSeen) {
@@ -86,10 +75,6 @@ public class PlayerDataQuery {
         return timestamp;
     }
 
-    public void setTimeoutTask(BukkitTask timeoutTask) {
-        this.timeoutTask = timeoutTask;
-    }
-
     public void stopTimeout() {
         if (timeoutTask != null) {
             timeoutTask.cancel();
@@ -117,5 +102,33 @@ public class PlayerDataQuery {
      */
     public Consumer<PlayerDataQuery> getOnComplete() {
         return onComplete;
+    }
+
+    /**
+     * @return the unique ID of the player
+     */
+    public UUID getPlayerId() {
+        return playerId;
+    }
+
+    /**
+     * @return the last seen time of this player on the local server
+     */
+    public long getLocalLastSeen() {
+        return localLastSeen;
+    }
+
+    /**
+     * @param timeoutTask the task to get canceled whenever the query completes
+     */
+    public void setTimeoutTask(BukkitTask timeoutTask) {
+        this.timeoutTask = timeoutTask;
+    }
+
+    /**
+     * @return an unmodifiable map of all servers and their last responded times
+     */
+    public Map<String, Long> getServers() {
+        return Collections.unmodifiableMap(servers);
     }
 }
