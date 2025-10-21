@@ -91,7 +91,7 @@ public class PlayerData implements Serializable {
         this.inventory = serializeItems(player.getInventory().getContents());
         this.enderchest = serializeItems(player.getEnderChest().getContents());
         this.potionEffects = player.getActivePotionEffects();
-        this.maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue();
+        this.maxHealth = player.getMaxHealth();
         this.health = player.getHealth();
         this.isHealthScaled = player.isHealthScaled();
         this.healthScale = player.getHealthScale();

@@ -29,7 +29,6 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -46,6 +45,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 /*
@@ -162,7 +163,7 @@ public final class SyncInv extends JavaPlugin {
     private int newestMap = 0;
     
     // Unknown player storing
-    private Method methodGetOfflinePlayer = null;
+    private Function<GameProfile, OfflinePlayer> getOfflinePlayer = null;
     private Method methodGetHandle = null;
     private Method methodSetPositionRaw;
     private Field fieldYaw = null;
@@ -187,11 +188,34 @@ public final class SyncInv extends JavaPlugin {
         
         playerDataFolder = new File(getServer().getWorlds().get(0).getWorldFolder(), "playerdata");
         try {
-            methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", GameProfile.class);
+            Method methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", GameProfile.class);
+            getOfflinePlayer = (gameProfile -> {
+                try {
+                    return  (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), gameProfile);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    logDebug("Could not create offline player for " + gameProfile.getId() + "! " + e.getMessage());
+                }
+                return null;
+            });
         } catch (NoSuchMethodException e) {
-            if (storeUnknownPlayers) {
-                getLogger().log(Level.WARNING, "Could not load method required to store unknown players. Disabling it!", e);
-                storeUnknownPlayers = false;
+            try {
+                Class nameAndIdClass = Class.forName("net.minecraft.server.players.NameAndId");
+                Constructor nameAndIdConstructor = nameAndIdClass.getConstructor(GameProfile.class);
+                Method methodGetOfflinePlayer = getServer().getClass().getMethod("getOfflinePlayer", nameAndIdClass);
+                getOfflinePlayer = (gameProfile -> {
+                    try {
+                        Object nameAndId = nameAndIdConstructor.newInstance(gameProfile);
+                        return  (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), nameAndId);
+                    } catch (IllegalAccessException | InvocationTargetException | InstantiationException e1) {
+                        logDebug("Could not create offline player for " + gameProfile.getId() + "! " + e.getMessage());
+                    }
+                    return null;
+                });
+            } catch (NoSuchMethodException | ClassNotFoundException e2) {
+                if (storeUnknownPlayers) {
+                    getLogger().log(Level.WARNING, "Could not load method required to store unknown players. Disabling it!", e);
+                    storeUnknownPlayers = false;
+                }
             }
         }
         playerDataCache = CacheBuilder.newBuilder().expireAfterWrite(queryTimeout, TimeUnit.SECONDS).build();
@@ -575,10 +599,9 @@ public final class SyncInv extends JavaPlugin {
                     OfflinePlayer offlinePlayer = getServer().getOfflinePlayer(data.getPlayerId());
                     if (storeUnknownPlayers && !offlinePlayer.hasPlayedBefore()) {
                         if (offlinePlayer.getName() == null) {
-                            try {
-                                offlinePlayer = (OfflinePlayer) methodGetOfflinePlayer.invoke(getServer(), new GameProfile(data.getPlayerId(), data.getPlayerName()));
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                logDebug("Could not create offline player for " + data.getPlayerId() + "! " + e.getMessage());
+                            OfflinePlayer internalOfflinePlayer = getOfflinePlayer.apply(new GameProfile(data.getPlayerId(), data.getPlayerName()));
+                            if (internalOfflinePlayer != null) {
+                                offlinePlayer = internalOfflinePlayer;
                             }
                         }
                         createdNewFile = createNewEmptyData(offlinePlayer.getUniqueId());
@@ -723,7 +746,7 @@ public final class SyncInv extends JavaPlugin {
                     }
                 }
                 if (shouldSync(SyncType.HEALTH)) {
-                    player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(data.getMaxHealth());
+                    player.setMaxHealth(data.getMaxHealth());
                 }
                 if (shouldSync(SyncType.HUNGER))
                     player.setFoodLevel(data.getFoodLevel());
