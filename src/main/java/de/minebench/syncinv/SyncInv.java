@@ -8,8 +8,10 @@ import com.lishid.openinv.OpenInv;
 import com.lishid.openinv.command.OpenInvCommand;
 import com.mojang.authlib.GameProfile;
 import de.minebench.syncinv.listeners.MapCreationListener;
+import de.minebench.syncinv.listeners.PlayerConnectionValidateLoginListener;
 import de.minebench.syncinv.listeners.PlayerFreezeListener;
 import de.minebench.syncinv.listeners.PlayerJoinListener;
+import de.minebench.syncinv.listeners.PlayerLoginListener;
 import de.minebench.syncinv.listeners.PlayerQuitListener;
 import de.minebench.syncinv.messenger.Message;
 import de.minebench.syncinv.messenger.MessageType;
@@ -227,6 +229,14 @@ public final class SyncInv extends JavaPlugin {
         }
 
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        try {
+            Class.forName("io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent");
+            getServer().getPluginManager().registerEvents(new PlayerConnectionValidateLoginListener(this), this);
+            logDebug("Using Paper connection validate login event");
+        } catch (ClassNotFoundException e) {
+            getServer().getPluginManager().registerEvents(new PlayerLoginListener(this), this);
+            logDebug("Using legacy login event");
+        }
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerFreezeListener(this), this);
         getServer().getPluginManager().registerEvents(new MapCreationListener(this), this);
