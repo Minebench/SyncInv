@@ -19,16 +19,14 @@ import de.minebench.syncinv.messenger.PlayerDataQuery;
 import de.minebench.syncinv.messenger.RedisMessenger;
 import de.minebench.syncinv.messenger.ServerMessenger;
 import lombok.Getter;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.WorldType;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.command.Command;
@@ -169,11 +167,6 @@ public final class SyncInv extends JavaPlugin {
     // Unknown player storing
     private Function<GameProfile, OfflinePlayer> getOfflinePlayer = null;
     private Method methodGetHandle = null;
-    private Method methodSetPositionRaw;
-    private Field fieldYaw = null;
-    private Field fieldPitch = null;
-    private Method methodSetYaw = null;
-    private Method methodSetPitch = null;
 
     // Offline player health setting
     private Method methodSetHealth;
@@ -271,6 +264,14 @@ public final class SyncInv extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getCommand("syncinv").setExecutor(this);
         if (openInv != null) {
+            // ensure minimum OpenInv version is present.
+            if (storeUnknownPlayers && new ComparableVersion(openInv.getPluginMeta().getVersion()).compareTo(new ComparableVersion("5.1.7")) < 0) {
+                getLogger().severe(
+                    "Warning: You are using a not supported Version of OpenInv! " +
+                    "Please update to Version 5.1.7 or higher! " +
+                    "With the wrong version version present storing unknown players will fail!");
+            }
+
             OpenInvCommand openInvCommand = (OpenInvCommand) openInv.getCommand("openinv").getExecutor();
             CommandExecutor forwarding = (sender, command, label, args) -> {
                 if (sender instanceof Player && args.length > 0 && (!getMessenger().isAllowedToBeAlone() || !getMessenger().isAlone())) {
@@ -450,22 +451,6 @@ public final class SyncInv extends JavaPlugin {
                 getLogger().log(Level.WARNING, "Could not load field required for map syncing. Disabling it!", e);
                 disableSync(SyncType.MAPS);
             }
-        }
-
-        // Make sure the world "world" exists so that we can store unknown players without issues
-        if (storeUnknownPlayers && getServer().getWorld("world") == null && getConfig().getBoolean("create-world")) {
-            getLogger().log(Level.INFO, "No world with the name 'world' exists while 'store-unknown-players' is enabled. This world is needed for that functionality to work correctly, creating it... (can be disabled with 'create-world' in the config)");
-            World world = getServer().createWorld(new WorldCreator("world")
-                    .type(WorldType.FLAT)
-                    .generateStructures(false));
-            world.setAutoSave(false);
-            world.setViewDistance(2);
-            world.setKeepSpawnInMemory(false);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-            world.setGameRule(GameRule.DO_FIRE_TICK, false);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            world.setGameRule(GameRule.DISABLE_RAIDS, true);
         }
     }
 
@@ -647,49 +632,6 @@ public final class SyncInv extends JavaPlugin {
                     player = getOpenInv().loadPlayer(offlinePlayer);
                     if (player == null) {
                         logDebug("Unable to load player " + offlinePlayer.getName() + "/" + offlinePlayer.getUniqueId() + " data with OpenInv");
-                    } else if (createdNewFile) {
-                        try {
-                            if (methodGetHandle == null) {
-                                methodGetHandle = player.getClass().getMethod("getHandle");
-                            }
-                            Object entity = methodGetHandle.invoke(player);
-                            if (methodSetPositionRaw == null || (fieldYaw == null && methodSetYaw == null) || (fieldPitch == null || methodSetPitch == null)) {
-                                try {
-                                    // should be the "go-to" since 1.20.5+ for paper
-                                    methodSetPositionRaw = entity.getClass().getMethod("setPositionRaw", double.class, double.class, double.class);
-                                } catch (NoSuchMethodException e) {
-                                    // TODO: Better obfuscation support <-- use paper's userDev
-                                    // 1.18-1.18.2 was "e", would become "o" until 1.19.2 and is now (1.20.6 when not Moj-Mapped) "p"
-                                    methodSetPositionRaw = entity.getClass().getMethod("p", double.class, double.class, double.class);
-                                }
-                                try {
-                                    fieldYaw = entity.getClass().getField("yaw");
-                                    fieldPitch = entity.getClass().getField("pitch");
-                                } catch (NoSuchFieldException e) {
-                                    try {
-                                        methodSetYaw = entity.getClass().getMethod("setYRot", float.class);
-                                        methodSetPitch = entity.getClass().getMethod("setYRot", float.class);
-                                    } catch (NoSuchMethodException ignored) {}
-                                }
-                            }
-                            Location spawn = getServer().getWorlds().get(0).getSpawnLocation();
-                            methodSetPositionRaw.invoke(entity, spawn.getX(), spawn.getY(), spawn.getZ());
-                            if (fieldYaw != null) {
-                                fieldYaw.set(entity, spawn.getYaw());
-                            } else if (methodSetYaw != null) {
-                                methodSetYaw.invoke(entity, spawn.getYaw());
-                            }
-                            if (fieldPitch != null) {
-                                fieldPitch.set(entity, spawn.getPitch());
-                            } else if (methodSetPitch != null) {
-                                methodSetPitch.invoke(entity, spawn.getPitch());
-                            }
-                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                            getLogger().log(Level.WARNING, "Error while trying to set location of an unknown player. Disabling unknown player storage it!", e);
-                            storeUnknownPlayers = false;
-                            player = null;
-                            getOpenInv().unload(offlinePlayer);
-                        }
                     }
                 } else if (!getOpenInv().disableSaving() && getOpenInv().isPlayerLoaded(player.getUniqueId())) {
                     Player openInvLoadedPlayer = getOpenInv().loadPlayer(player);

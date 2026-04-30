@@ -50,6 +50,12 @@
         <dependency>
             <groupId>com.lishid</groupId>
             <artifactId>openinvplugin</artifactId>
+            <!--
+            Note: currently there is a discrepancy between run and compile time version!
+            Since OpenInv isn't able to publish anything else than it's API to maven, we remain
+            on 5.1.1 to compile against.
+            However, runtime dependency has moved on to 5.1.7+!
+            -->
             <version>5.1.1</version>
             <scope>provided</scope>
         </dependency>
