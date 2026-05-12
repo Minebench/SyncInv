@@ -47,7 +47,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDropItem(PlayerDropItemEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("cant-drop-items"));
         }
@@ -55,7 +55,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent e) {
-        if(!sameBlock(e.getFrom(), e.getTo()) && plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (!sameBlock(e.getFrom(), e.getTo()) && plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             if (e.getFrom().getBlockY() == e.getTo().getBlockY()) {
                 e.getPlayer().sendMessage(plugin.getLang("cant-move"));
@@ -79,7 +79,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerPickupExp(PlayerExpChangeEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setAmount(0);
             e.getPlayer().sendMessage(plugin.getLang("cant-pickup-exp"));
         }
@@ -87,7 +87,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDamage(EntityDamageEvent e) {
-        if(e.getEntity() instanceof Player && plugin.isLocked(e.getEntity().getUniqueId())) {
+        if (e.getEntity() instanceof Player && plugin.isLocked(e.getEntity().getUniqueId())) {
             e.setCancelled(true);
         }
     }
@@ -101,7 +101,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInventoryInteraction(InventoryClickEvent e) {
-        if(plugin.isLocked(e.getWhoClicked().getUniqueId())) {
+        if (plugin.isLocked(e.getWhoClicked().getUniqueId())) {
             e.setCancelled(true);
             e.getWhoClicked().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -109,7 +109,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInventoryInteraction(InventoryDragEvent e) {
-        if(plugin.isLocked(e.getWhoClicked().getUniqueId())) {
+        if (plugin.isLocked(e.getWhoClicked().getUniqueId())) {
             e.setCancelled(true);
             e.getWhoClicked().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -117,7 +117,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInventoryInteraction(InventoryOpenEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -125,7 +125,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInteraction(PlayerInteractEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -133,7 +133,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDamageEntity(EntityDamageByEntityEvent e) {
-        if(e.getDamager() instanceof Player && plugin.isLocked(e.getDamager().getUniqueId())) {
+        if (e.getDamager() instanceof Player && plugin.isLocked(e.getDamager().getUniqueId())) {
             e.setCancelled(true);
             e.getDamager().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -141,7 +141,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockDamage(BlockDamageEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -149,7 +149,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("wait-for-loading"));
         }
@@ -157,7 +157,7 @@ public class PlayerFreezeListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onChat(PlayerCommandPreprocessEvent e) {
-        if(plugin.isLocked(e.getPlayer().getUniqueId())) {
+        if (plugin.isLocked(e.getPlayer().getUniqueId())) {
             e.setCancelled(true);
             e.getPlayer().sendMessage(plugin.getLang("wait-for-loading"));
         }
