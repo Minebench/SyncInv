@@ -2,7 +2,6 @@ package de.minebench.syncinv.listeners;
 
 import de.minebench.syncinv.PlayerData;
 import de.minebench.syncinv.SyncInv;
-import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -41,12 +40,12 @@ public class PlayerJoinListener implements Listener {
         if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.ALLOWED) {
             if (plugin.getMessenger() == null) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
-                e.setKickMessage(ChatColor.RED + plugin.getName() + " is not enabled! Please contact an administrator!");
+                e.kickMessage(plugin.getLang("login_denied_plugin_invalid_state", "plugin", plugin.getName()));
                 return;
             }
             if (plugin.getMessenger().queryData(e.getUniqueId()) == null && (!plugin.getMessenger().isAllowedToBeAlone() || !plugin.getMessenger().isAlone())) {
                 e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
-                e.setKickMessage(ChatColor.RED + "Unable to query player data!");
+                e.kickMessage(plugin.getLang("login_denied_missing_data"));
                 return;
             }
         }
